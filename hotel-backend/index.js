@@ -30,10 +30,7 @@ let db;
     // Dodanie pól do tabeli Klient dla pełnej rejestracji
     try { await db.run(`ALTER TABLE Klient ADD COLUMN imie TEXT`); } catch (e) {}
     try { await db.run(`ALTER TABLE Klient ADD COLUMN nazwisko TEXT`); } catch (e) {}
-    const adminPassword = await bcrypt.hash('admin123', 10);
-    await db.run(`INSERT OR IGNORE INTO Pracownik (imie, nazwisko, stanowisko, login, password) 
-              VALUES (?, ?, ?, ?, ?)`, 
-              ['Jan', 'Kowalski', 'Admin', 'admin', adminPassword]);
+    
     console.log("SERWER DZIAŁA NA PORCIE " + port);
 
 })();

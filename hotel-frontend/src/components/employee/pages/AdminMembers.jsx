@@ -4,9 +4,9 @@ import { motion } from "framer-motion";
 import { useTableSearchSort } from "../hook/useTableSearchSort";
 
 const initialMembersData = [
-  { id: 1, firstName: "Dawid", lastName: "Dąbrowski", login: "ddabrowski" },
-  { id: 2, firstName: "Agata", lastName: "Bronk", login: "abronk" },
-  { id: 3, firstName: "Jakub", lastName: "Chryszczanowicz", login: "admin" },
+  { id: 1, firstName: "Dawid", lastName: "Dąbrowski", login: "ddabrowski", role: "Recepcjonista" },
+  { id: 2, firstName: "Agata", lastName: "Bronk", login: "abronk", role: "Recepcjonista" },
+  { id: 3, firstName: "Jakub", lastName: "Chryszczanowicz", login: "admin", role: "Admin" },
 ];
 
 const AdminMembers = () => {
@@ -17,6 +17,7 @@ const AdminMembers = () => {
     firstName: "",
     lastName: "",
     login: "",
+    role: "Recepcjonista",
   });
 
   const [password, setPassword] = useState("");
@@ -26,14 +27,14 @@ const AdminMembers = () => {
   const { search, setSearch, handleSort, data: sortedData, renderSortIcon } =
     useTableSearchSort({
       data: members,
-      searchableFields: ["firstName", "lastName", "login"],
+      searchableFields: ["firstName", "lastName", "login", "role"],
       defaultSortKey: "lastName",
       defaultSortDirection: "asc",
     });
 
   const openModal = () => {
     setError("");
-    setForm({ firstName: "", lastName: "", login: "" });
+    setForm({ firstName: "", lastName: "", login: "", role: "Recepcjonista" });
     setPassword("");
     setShowPassword(false);
     setIsModalOpen(true);
@@ -68,20 +69,25 @@ const AdminMembers = () => {
       return;
     }
 
-    const nextId = members.length
-      ? Math.max(...members.map((m) => m.id)) + 1
-      : 1;
+    const nextId = members.length ? Math.max(...members.map((m) => m.id)) + 1 : 1;
 
     const newMember = {
       id: nextId,
       firstName,
       lastName,
       login,
+      role: form.role,
       password, // DEMO – tylko frontend (nie pokazujemy w tabeli)
     };
 
     setMembers((prev) => [...prev, newMember]);
     setIsModalOpen(false);
+  };
+
+  const roleBadgeClass = (role) => {
+    if (role === "Admin") return "bg-red-500/15 text-red-400 border border-red-500/20";
+    if (role === "Recepcjonista") return "bg-indigo-500/15 text-indigo-300 border border-indigo-500/20";
+    return "bg-slate-700/60 text-slate-200 border border-slate-600/40";
   };
 
   return (
@@ -104,7 +110,7 @@ const AdminMembers = () => {
       <div className="mb-6 max-w-sm">
         <input
           type="text"
-          placeholder="Szukaj po imieniu, nazwisku lub loginie..."
+          placeholder="Szukaj po imieniu, nazwisku, loginie lub typie..."
           className="w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -116,7 +122,7 @@ const AdminMembers = () => {
         <table className="min-w-full text-sm table-fixed">
           <thead className="bg-slate-800 text-slate-300">
             <tr>
-              <th className="px-4 py-3 text-left w-[30%]">
+              <th className="px-4 py-3 text-left w-[28%]">
                 <button
                   type="button"
                   onClick={() => handleSort("firstName")}
@@ -126,7 +132,7 @@ const AdminMembers = () => {
                 </button>
               </th>
 
-              <th className="px-4 py-3 text-left w-[40%]">
+              <th className="px-4 py-3 text-left w-[32%]">
                 <button
                   type="button"
                   onClick={() => handleSort("lastName")}
@@ -136,13 +142,23 @@ const AdminMembers = () => {
                 </button>
               </th>
 
-              <th className="px-4 py-3 text-left w-[30%]">
+              <th className="px-4 py-3 text-left w-[22%]">
                 <button
                   type="button"
                   onClick={() => handleSort("login")}
                   className="inline-flex items-center gap-1 hover:text-white"
                 >
                   Login {renderSortIcon("login")}
+                </button>
+              </th>
+
+              <th className="px-4 py-3 text-center w-[18%]">
+                <button
+                  type="button"
+                  onClick={() => handleSort("role")}
+                  className="inline-flex items-center gap-1 hover:text-white"
+                >
+                  Typ {renderSortIcon("role")}
                 </button>
               </th>
             </tr>
@@ -164,14 +180,20 @@ const AdminMembers = () => {
                   <td className="px-4 py-3 text-left text-slate-300 truncate">
                     {m.login}
                   </td>
+                  <td className="px-4 py-3 text-center">
+                    <span
+                      className={`inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-medium ${roleBadgeClass(
+                        m.role
+                      )}`}
+                    >
+                      {m.role}
+                    </span>
+                  </td>
                 </tr>
               ))
             ) : (
               <tr className="border-t border-slate-700/60">
-                <td
-                  colSpan={3}
-                  className="px-4 py-6 text-center text-slate-400 italic"
-                >
+                <td colSpan={4} className="px-4 py-6 text-center text-slate-400 italic">
                   Brak wyników.
                 </td>
               </tr>
@@ -203,9 +225,7 @@ const AdminMembers = () => {
               placeholder="Imię"
               className="w-full p-3 rounded bg-slate-700 placeholder-slate-400 text-white mb-3"
               value={form.firstName}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, firstName: e.target.value }))
-              }
+              onChange={(e) => setForm((p) => ({ ...p, firstName: e.target.value }))}
             />
 
             <input
@@ -213,9 +233,7 @@ const AdminMembers = () => {
               placeholder="Nazwisko"
               className="w-full p-3 rounded bg-slate-700 placeholder-slate-400 text-white mb-3"
               value={form.lastName}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, lastName: e.target.value }))
-              }
+              onChange={(e) => setForm((p) => ({ ...p, lastName: e.target.value }))}
             />
 
             <input
@@ -225,6 +243,15 @@ const AdminMembers = () => {
               value={form.login}
               onChange={(e) => setForm((p) => ({ ...p, login: e.target.value }))}
             />
+
+            <select
+              value={form.role}
+              onChange={(e) => setForm((p) => ({ ...p, role: e.target.value }))}
+              className="w-full p-3 rounded bg-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-3"
+            >
+              <option value="Recepcjonista">Recepcjonista</option>
+              <option value="Admin">Admin</option>
+            </select>
 
             {/* Password */}
             <div className="mb-4">
@@ -247,8 +274,7 @@ const AdminMembers = () => {
                 </button>
               </div>
               <p className="mt-2 text-xs text-slate-400">
-                Demo (frontend). W realnym systemie hasło powinno być obsłużone
-                po stronie backendu.
+                Demo (frontend). W realnym systemie hasło powinno być obsłużone po stronie backendu.
               </p>
             </div>
 

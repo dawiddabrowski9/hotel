@@ -13,10 +13,46 @@ export default function BookingForm({ room, onBack, onSuccess }) {
     guests: 1,
   });
 
-  const handleSubmit = (e) => {
+  const [error, setError] = useState(null);
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Rezerwacja:", { room, formData });
-    onSuccess();
+    setError(null);
+
+
+      
+  const bookingData = {
+
+    //Tabela klient
+    imie: formData.firstName,
+    nazwisko: formData.lastName,
+    email: formData.email,
+    nr_tel: formData.phone,
+    //Tabela rezerwacja
+
+    data_przyjazdu: formData.checkIn,
+    data_wyjazdu: formData.checkOut,
+    liczba_gosci: formData.guests,
+    
+  }
+
+    try {
+    const response = await fetch('http://localhost:3000/book', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bookingData)
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      onSuccess(data);
+    } else {
+      setError(data.message||"Błąd podczas rezerwacji");
+    }
+  } catch (err) {
+    setError("Brak połączenia z serwerem");
+  }
+
   };
 
   return (
@@ -58,6 +94,15 @@ export default function BookingForm({ room, onBack, onSuccess }) {
         {/* Form Card */}
         <SlideUp delay={0.25} className="w-full">
           <div className="bg-white border border-slate-200 shadow-sm p-8">
+            
+            
+            {error && (
+              <div className="mb-6 p-4 bg-red-100 text-red-700 border border-red-300">
+                {error}
+              </div>
+            )}
+            
+
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Name */}
               <SlideUp delay={0.1}>
@@ -221,7 +266,9 @@ export default function BookingForm({ room, onBack, onSuccess }) {
             </form>
           </div>
         </SlideUp>
+        
       </div>
+
     </section>
   );
 }

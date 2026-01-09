@@ -3,7 +3,9 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const sqlite3 = require('sqlite3');
+
 const { open } = require('sqlite');
+
 
 const app = express();
 app.use(cors());
@@ -21,7 +23,7 @@ let db;
 
 // Pełna rejestracja użytkownika
 app.post('/register', async (req, res) => {
-    const { imie, nazwisko, email, password } = req.body;
+    const { imie, nazwisko, stanowisko, login, password } = req.body;
     const hashed = await bcrypt.hash(password, 10);
     try {
         await db.run('INSERT INTO Pracownik(imie, nazwisko, stanowisko, login, password) VALUES (?, ?, ?, ?, ?)', [imie, nazwisko, stanowisko, login, hashed]);
@@ -41,6 +43,39 @@ app.post('/login', async (req, res) => {
     } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
+
+app.get('/reservations/summary', async (req, res) => {
+    const data = await db.get(`
+        SELECT 
+            COUNT(*) AS total_reservations,
+            SUM(liczba_gosci) AS total_guests
+        FROM Rezerwacja
+        WHERE date('now') BETWEEN data_przyjazdu AND data_wyjazdu
+    `);
+    res.json(data);
+});
+
+
+   
+app.get('/users/list', async (req, res) => {
+
+    const data = await db.all(`
+        SELECT 
+            id_pracownik AS id, 
+            imie AS firstName, 
+            nazwisko AS lastName, 
+            stanowisko AS role,
+            login 
+        FROM Pracownik
+    `);
+    res.json(data);
+});
+
+
+app.get('/users/list', async (req, res) => {
+    const data = await db.all(`SELECT id_pracownik, imie, nazwisko, stanowisko, login FROM Pracownik`);
+    res.json(data);
+});
 
 
 app.get('/rooms/summary', async (req, res) => {

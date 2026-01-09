@@ -1,16 +1,14 @@
 // src/components/employee/pages/AdminMembers.jsx
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import { motion } from "framer-motion";
 import { useTableSearchSort } from "../hook/useTableSearchSort";
 
-const initialMembersData = [
-  { id: 1, firstName: "Dawid", lastName: "Dąbrowski", login: "ddabrowski", role: "Recepcjonista" },
-  { id: 2, firstName: "Agata", lastName: "Bronk", login: "abronk", role: "Recepcjonista" },
-  { id: 3, firstName: "Jakub", lastName: "Chryszczanowicz", login: "admin", role: "Admin" },
-];
+
 
 const AdminMembers = () => {
-  const [members, setMembers] = useState(initialMembersData);
+  
+ 
+  const [members, setMembers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [form, setForm] = useState({
@@ -31,6 +29,20 @@ const AdminMembers = () => {
       defaultSortKey: "lastName",
       defaultSortDirection: "asc",
     });
+     useEffect(() => {
+    const fetchMembers = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/users/list');
+        const data = await response.json();
+        setMembers(data);
+      } catch (error) {
+        console.error("Błąd podczas pobierania listy użytkowników:", error);
+      } 
+    };
+
+    fetchMembers();
+  }, []);
+
 
   const openModal = () => {
     setError("");
@@ -45,8 +57,25 @@ const AdminMembers = () => {
     setError("");
   };
 
-  const handleSave = () => {
+  const handleSave = (e) => {
     setError("");
+    e.preventDefault();
+    try {
+      const response = fetch('http://localhost:3000/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },  
+        body: JSON.stringify({
+          imie: form.firstName,
+          nazwisko: form.lastName,
+          login: form.login,
+          password: password,
+          stanowisko: form.role
+        })
+      });
+      addMember();
+    } catch (err) {
+      setError("Wystąpił błąd podczas dodawania użytkownika.");
+    } 
 
     const firstName = form.firstName.trim();
     const lastName = form.lastName.trim();
@@ -77,7 +106,7 @@ const AdminMembers = () => {
       lastName,
       login,
       role: form.role,
-      password, // DEMO – tylko frontend (nie pokazujemy w tabeli)
+      password,
     };
 
     setMembers((prev) => [...prev, newMember]);

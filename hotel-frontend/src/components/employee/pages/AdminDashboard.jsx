@@ -8,9 +8,12 @@ import React,{useState,useEffect}from "react";
 
 const AdminDashboard = ({ setSelected }) => {
 
+  const [reservationSummary, setReservationSummary] = useState({
+    today_reservations: 0,
+    total_guests: 0
+  });
 
-
-  const [roomSummary, setSummary] = useState({
+  const [roomSummary, setRoomSummary] = useState({
     total_rooms: 0,
     occupied_rooms: 0,
     free_rooms: 0
@@ -20,10 +23,14 @@ const AdminDashboard = ({ setSelected }) => {
   useEffect(() => {
     const fetchSummary = async () => {
       try {
+        
+        const roomResponse = await fetch('http://localhost:3000/rooms/summary');
+        const roomData = await roomResponse.json();
+        setRoomSummary(roomData);
 
-        const response = await fetch('http://localhost:3000/rooms/summary');
-        const data = await response.json();
-        setSummary(data);
+        const res = await fetch('http://localhost:3000/reservations/summary');
+        const reservationData = await res.json();
+        setReservationSummary(reservationData);
       } catch (error) {
         console.error("Błąd podczas pobierania danych:", error);
       } finally {
@@ -51,7 +58,7 @@ const AdminDashboard = ({ setSelected }) => {
         >
           <p className="text-l text-slate-400 cente">Obłożenie pokoi</p>
           <p className="mt-2 text-4xl font-bold text-indigo-400">{occupancyPrecentage}%</p>
-          <p className="mt-1 text-xs text-emerald-400">+5% vs wczoraj</p>
+          
         </div>
 
         {/* Kafelek 2 */}
@@ -79,8 +86,8 @@ const AdminDashboard = ({ setSelected }) => {
         {/* Kafelek 4 */}
         <div className="bg-slate-800 rounded-xl p-16 shadow-lg border border-slate-700">
           <p className="text-l text-slate-400">Dzisiejsze check-iny</p>
-          <p className="mt-2 text-4xl font-bold text-amber-400">9</p>
-          <p className="mt-1 text-xs text-slate-400">3 jeszcze oczekuje</p>
+          <p className="mt-2 text-4xl font-bold text-amber-400">{reservationSummary.total_guests}</p>
+          <p className="mt-1 text-xs text-slate-400">{Date.now()}</p>
         </div>
       </div>
 

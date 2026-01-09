@@ -41,11 +41,31 @@ app.post('/login', async (req, res) => {
     } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-// Pobieranie listy pokoi
-app.get('/rooms', async (req, res) => {
-    const rooms = await db.all('SELECT * FROM Pokoj');
-    res.json(rooms);
+
+
+app.get('/rooms/summary', async (req, res) => {
+    const data = await db.get(`
+        SELECT 
+            COUNT(*) AS total_rooms,
+            SUM(CASE WHEN status = 'zajety' THEN 1 ELSE 0 END) AS occupied_rooms,
+            SUM(CASE WHEN status = 'wolny' THEN 1 ELSE 0 END) AS free_rooms
+        FROM Pokoj
+    `);
+    res.json(data);
 });
+/*
+api.get('/guests/count', async (req, res) => {
+    const data = await db.get(`
+        SELECT 
+            COUNT(*) AS total_guests WHERE INNER JOIN Rezerwacja ON Pokoj.id_pokoj = Rezerwacja.id_pokoj
+            WHERE date('now') BETWEEN Rezerwacja.data_przyjazdu AND Rezerwacja.data_wyjazdu
+        FROM Klient
+        INNER JOIN Rezerwacja ON Klient.id_klient = Rezerwacja.id_klient
+        WHERE date('now') BETWEEN Rezerwacja.data_przyjazdu AND Rezerwacja.data_wyjazdu
+    `);
+    res.json(data);
+});
+*/
 
 // Utworzenie rezerwacji
 app.post('/book', async (req, res) => {
@@ -72,5 +92,7 @@ app.post('/book', async (req, res) => {
         console.error("Błąd bazy:", err.message); // To pokaże Ci dokładny błąd w konsoli serwera (node)
         res.status(500).json({ message: "Błąd bazy danych: " + err.message });
     }
+
 });
+
 app.listen(port);

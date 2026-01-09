@@ -1,7 +1,43 @@
 // src\components\employee\pages\AdminDashboard.jsx
-import React from "react";
+import React,{useState,useEffect}from "react";
+
+
+
+
+
 
 const AdminDashboard = ({ setSelected }) => {
+
+
+
+  const [roomSummary, setSummary] = useState({
+    total_rooms: 0,
+    occupied_rooms: 0,
+    free_rooms: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSummary = async () => {
+      try {
+
+        const response = await fetch('http://localhost:3000/rooms/summary');
+        const data = await response.json();
+        setSummary(data);
+      } catch (error) {
+        console.error("Błąd podczas pobierania danych:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchSummary();
+  }, []);
+  
+  const occupancyPrecentage = roomSummary.total_rooms
+    ? ((roomSummary.occupied_rooms / roomSummary.total_rooms) * 100).toFixed(0)
+    : 0;
+
   return (
     <section>
       <h1 className="text-3xl font-bold mb-6">DashBoard</h1>
@@ -14,7 +50,7 @@ const AdminDashboard = ({ setSelected }) => {
           className="bg-slate-800 rounded-xl p-16 shadow-lg border border-slate-700 cursor-pointer hover:bg-slate-700 transition"
         >
           <p className="text-l text-slate-400 cente">Obłożenie pokoi</p>
-          <p className="mt-2 text-4xl font-bold text-indigo-400">82%</p>
+          <p className="mt-2 text-4xl font-bold text-indigo-400">{occupancyPrecentage}%</p>
           <p className="mt-1 text-xs text-emerald-400">+5% vs wczoraj</p>
         </div>
 
@@ -36,8 +72,8 @@ const AdminDashboard = ({ setSelected }) => {
           className="bg-slate-800 rounded-xl p-16 shadow-lg border border-slate-700 cursor-pointer hover:bg-slate-700 transition"
         >
           <p className="text-l text-slate-400">Goście w hotelu</p>
-          <p className="mt-2 text-4xl font-bold text-sky-400">74</p>
-          <p className="mt-1 text-xs text-slate-400">z 90 dostępnych miejsc</p>
+          <p className="mt-2 text-4xl font-bold text-sky-400">100</p>
+          <p className="mt-1 text-xs text-slate-400">{roomSummary.total_rooms} dostępnych miejsca</p>
         </div>
 
         {/* Kafelek 4 */}
@@ -67,5 +103,4 @@ const AdminDashboard = ({ setSelected }) => {
     </section>
   );
 };
-
 export default AdminDashboard;

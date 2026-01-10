@@ -20,8 +20,7 @@ let db;
     db = await open({ filename: './hotel.db', driver: sqlite3.Database });
     console.log("SERWER DZIAŁA NA PORCIE " + port);
 })();
-
-// Pełna rejestracja użytkownika
+// ENDPOINT REJESTRACJI
 app.post('/register', async (req, res) => {
     const { imie, nazwisko, stanowisko, login, password } = req.body;
     const hashed = await bcrypt.hash(password, 10);
@@ -50,8 +49,7 @@ app.get('/reservations/summary', async (req, res) => {
             COUNT(*) AS total_reservations,
             SUM(liczba_gosci) AS total_guests
         FROM Rezerwacja
-        WHERE date('now') BETWEEN data_przyjazdu AND data_wyjazdu
-    `);
+        WHERE date('now') LIKE data_przyjazdu`);
     res.json(data);
 });
 
@@ -77,7 +75,10 @@ app.get('/users/list', async (req, res) => {
     res.json(data);
 });
 
-
+app.get('/rooms/list', async (req, res) => {
+    const data = await db.all(`SELECT id_pokoj, numer_pokoju, typ_pokoju, status FROM Pokoj`);
+    res.json(data);
+});
 app.get('/rooms/summary', async (req, res) => {
     const data = await db.get(`
         SELECT 
@@ -88,6 +89,9 @@ app.get('/rooms/summary', async (req, res) => {
     `);
     res.json(data);
 });
+
+
+
 /*
 api.get('/guests/count', async (req, res) => {
     const data = await db.get(`

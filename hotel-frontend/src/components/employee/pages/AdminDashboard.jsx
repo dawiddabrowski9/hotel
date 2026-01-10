@@ -14,10 +14,15 @@ const AdminDashboard = ({ setSelected }) => {
   });
 
   const [roomSummary, setRoomSummary] = useState({
+    occupied_beds: 0,
+    total_beds: 0,
     total_rooms: 0,
     occupied_rooms: 0,
     free_rooms: 0
+    
   });
+
+  const [guestCount, setGuestCount] = useState(0);  
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,6 +32,7 @@ const AdminDashboard = ({ setSelected }) => {
         const roomResponse = await fetch('http://localhost:3000/rooms/summary');
         const roomData = await roomResponse.json();
         setRoomSummary(roomData);
+
 
         const res = await fetch('http://localhost:3000/reservations/summary');
         const reservationData = await res.json();
@@ -79,8 +85,8 @@ const AdminDashboard = ({ setSelected }) => {
           className="bg-slate-800 rounded-xl p-16 shadow-lg border border-slate-700 cursor-pointer hover:bg-slate-700 transition"
         >
           <p className="text-l text-slate-400">Goście w hotelu</p>
-          <p className="mt-2 text-4xl font-bold text-sky-400">100</p>
-          <p className="mt-1 text-xs text-slate-400">{roomSummary.total_rooms} dostępnych miejsca</p>
+          <p className="mt-2 text-4xl font-bold text-sky-400">{roomSummary.occupied_beds}</p>
+          <p className="mt-1 text-xs text-slate-400">{roomSummary.total_beds} dostępnych miejsc</p>
         </div>
 
         {/* Kafelek 4 */}

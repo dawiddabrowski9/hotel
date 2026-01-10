@@ -1,30 +1,14 @@
 // src\components\employee\pages\AdminRooms.jsx
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect} from "react";
 import { motion } from "framer-motion";
 import { useTableSearchSort } from "../hook/useTableSearchSort";
 
 const initialRoomsData = [
-  {
-    id: 5,
-    name: "Pokój dwuosobowy classic",
-    capacity: 2,
-    type: "Standard",
-    status: "Wolny",
-  },
-  {
-    id: 6,
-    name: "Pokój czteroosobowy deluxe",
-    capacity: 4,
-    type: "Deluxe",
-    status: "Sprzątanie",
-  },
-  {
-    id: 7,
-    name: "Apartament pałacowy czteroosobowy",
-    capacity: 4,
-    type: "Apartament",
-    status: "Oczekujący",
-  },
+  { id: 101, name: "Pokój 101", capacity: 2, type: "Standard", status: "Wolny" },
+  { id: 102, name: "Pokój 102", capacity: 3, type: "Deluxe", status: "Zajęty" },
+  { id: 103, name: "Pokój 103", capacity: 1, type: "Standard", status: "Sprzątanie" },
+  { id: 104, name: "Pokój 104", capacity: 4, type: "Apartament", status: "Oczekujący" },
+  { id: 105, name: "Pokój 105", capacity: 2, type: "Deluxe", status: "Wolny" },
 ];
 
 const statusColors = {
@@ -42,13 +26,13 @@ const AdminRooms = () => {
   // dane jako state, żeby dało się dodawać
   const [rooms, setRooms] = useState(initialRoomsData);
 
-  // modal + formularz
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState({
     id: "",
     name: "",
     capacity: "",
-    type: "",
+    floor: "",
     status: "Wolny",
   });
   const [error, setError] = useState("");
@@ -97,33 +81,42 @@ const AdminRooms = () => {
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
   };
 
-  const handleSave = () => {
-    setError("");
+  const handleSave = async (e) => { 
 
-    const idNum = Number(form.id);
-    const capNum = Number(form.capacity);
+  const idNum = Number(form.id);
+  const capNum = Number(form.capacity);
 
-    if (!Number.isInteger(idNum) || idNum <= 0) {
-      setError("Podaj poprawny numer pokoju (liczba całkowita > 0).");
-      return;
-    }
-    if (!form.name.trim()) {
-      setError("Podaj nazwę pokoju.");
-      return;
-    }
-    if (!Number.isInteger(capNum) || capNum <= 0) {
-      setError("Podaj poprawną pojemność (liczba całkowita > 0).");
-      return;
-    }
-    if (!form.type.trim()) {
-      setError("Podaj typ pokoju (np. Standard/Deluxe/Apartament).");
-      return;
-    }
-    if (rooms.some((r) => r.id === idNum)) {
-      setError(`Pokój o numerze ${idNum} już istnieje.`);
-      return;
+  if (!Number.isInteger(idNum) || idNum <= 0) {
+    setError("Podaj poprawny numer pokoju.");
+    return;
+  }
+  if (!form.name.trim() || !form.type.trim()) {
+    setError("Wypełnij wszystkie pola.");
+    return;
+  }
+  if (rooms.some((r) => r.id === idNum)) {
+    setError(`Pokój o numerze ${idNum} już istnieje.`);
+    return;
+  }
+
+  try {
+    const response = await fetch('http://localhost:3000/rooms/add', { // 2. Added await
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        typ: form.type.trim(),
+        ilosc_lozek: capNum,
+        pietro: 1, 
+        status: form.status,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Błąd serwera");
     }
 
+  
     const newRoom = {
       id: idNum,
       name: form.name.trim(),
@@ -134,7 +127,26 @@ const AdminRooms = () => {
 
     setRooms((prev) => [...prev, newRoom]);
     setIsModalOpen(false);
+    
+  } catch (error) {
+    console.error("Błąd podczas dodawania pokoju:", error);
+    setError(error.message); // This will show the actual database error to the user
+  }
+};
+  const fetchedRooms = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/rooms/list');
+      const data = await response.json();
+      setRooms(data);
+    } catch (error) {
+      console.error("Błąd podczas pobierania listy pokoi:", error);
+    }
   };
+
+  useEffect(() => {
+    fetchedRooms();
+  }, []);
+
 
   return (
     <section>

@@ -43,6 +43,45 @@ app.post('/login', async (req, res) => {
 });
 
 
+app.get('/currentuserinfo', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ message: "Brak tokena lub nieprawidłowy format" });
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    try {
+        const decoded = jwt.verify(token, SECRET_KEY);
+    
+        const user = await db.get(
+            'SELECT imie, stanowisko FROM Pracownik WHERE id_pracownik = ?', 
+            [decoded.id]
+        );
+        if (!user) {
+            return res.status(404).json({ message: "Użytkownik nie istnieje" });
+        }
+        res.json({
+            name: user.imie,
+            role: user.stanowisko
+        });
+      
+    } catch (e) {
+        console.error("JWT Verification Error:", e.message); 
+        res.status(401).json({ message: "Nieprawidłowy lub przedawniony token" });
+    }
+});
+
+
+app.get('/reservations/guestcount', async (req, res) => {
+    const data = await db.get(`
+        SELECT 
+            SUM(liczba_gosci) AS total_guests
+        FROM Rezerwacja
+        WHERE date('now') BETWEEN data_przyjazdu AND data_wyjazdu`);
+    res.json(data);
+});
 app.get('/reservations/summary', async (req, res) => {
     const data = await db.get(`
         SELECT 
@@ -69,19 +108,42 @@ app.get('/users/list', async (req, res) => {
     res.json(data);
 });
 
-
+app.post('/rooms/add', async (req, res) => {
+    const { typ, ilosc_lozek, pietro, status } = req.body;
+    try {
+        await db.run(
+            `INSERT INTO Pokoj (typ,ilosc_lozek, pietro , status) VALUES (?, ?, ?, ?)`,
+            [typ,ilosc_lozek,pietro,status || 'wolny']
+        );
+        res.status(201).json({ message: "Dodano pokój pomyślnie" });
+    } catch (e) {
+        res.status(400).json({ message: "Błąd podczas dodawania pokoju: " + e.message });
+    }
+});
 app.get('/users/list', async (req, res) => {
     const data = await db.all(`SELECT id_pracownik, imie, nazwisko, stanowisko, login FROM Pracownik`);
     res.json(data);
 });
 
 app.get('/rooms/list', async (req, res) => {
-    const data = await db.all(`SELECT id_pokoj, numer_pokoju, typ_pokoju, status FROM Pokoj`);
+        const data = await db.all(`
+        SELECT 
+            id_pokoj AS id, 
+            typ AS name, 
+            pietro AS floor,
+            status AS status,
+            ilosc_lozek AS capacity
+        FROM Pokoj
+    `);
+     
     res.json(data);
 });
 app.get('/rooms/summary', async (req, res) => {
     const data = await db.get(`
+        
         SELECT 
+            SUM(ilosc_lozek) AS total_beds,
+            SUM(CASE WHEN status = 'zajety' THEN ilosc_lozek ELSE 0 END) AS occupied_beds,
             COUNT(*) AS total_rooms,
             SUM(CASE WHEN status = 'zajety' THEN 1 ELSE 0 END) AS occupied_rooms,
             SUM(CASE WHEN status = 'wolny' THEN 1 ELSE 0 END) AS free_rooms
@@ -117,15 +179,26 @@ app.post('/book', async (req, res) => {
         );
 
         const idKlienta = resultKlient.lastID;
-
-    
+        const resultPokoj = await db.get(
+            `SELECT id_pokoj FROM Pokoj WHERE typ = ? AND status = 'wolny' LIMIT 1`,
+            [d.typ_pokoju]
+           
+        );
+        console.log(d.typ_pokoju);  
+        if (!resultPokoj) {
+            return res.status(400).json({ message: "Brak dostępnych pokoi tego typu" });
+        }
         await db.run(
             `INSERT INTO Rezerwacja 
             (id_klient, id_pokoj, data_przyjazdu, data_wyjazdu, liczba_gosci) 
             VALUES (?, ?, ?, ?, ?)`,
-            [idKlienta, d.id_pokoj, d.data_przyjazdu, d.data_wyjazdu, d.liczba_gosci]
+            [idKlienta, resultPokoj.id_pokoj, d.data_przyjazdu, d.data_wyjazdu, d.liczba_gosci]
+            
         );
-
+        await db.run(
+            `UPDATE Pokoj SET status = 'zajety' WHERE id_pokoj = ?`,
+            [resultPokoj.id_pokoj]
+        );
         res.status(201).json({ message: "Zarezerwowano pomyślnie!" });
     } catch (err) {
         console.error("Błąd bazy:", err.message); // To pokaże Ci dokładny błąd w konsoli serwera (node)

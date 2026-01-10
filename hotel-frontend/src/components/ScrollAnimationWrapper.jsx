@@ -12,8 +12,8 @@ export default function ScrollAnimationWrapper({
 }) {
   const ref = useRef(null);
   const isInView = useInView(ref, { 
-    once: true, // Animacja uruchamia się tylko raz
-    margin: "-100px", // Kiedy element wchodzi w widok (możesz dostosować)
+    once: true, 
+    margin: "-100px",
   });
 
   return (

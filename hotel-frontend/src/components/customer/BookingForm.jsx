@@ -33,6 +33,8 @@ export default function BookingForm({ room, onBack, onSuccess }) {
     data_wyjazdu: formData.checkOut,
     liczba_gosci: formData.guests,
     
+    typ_pokoju: room.name,
+
   }
 
     try {

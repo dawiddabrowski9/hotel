@@ -35,7 +35,7 @@ app.post('/login', async (req, res) => {
     try {
         const user = await db.get('SELECT * FROM Pracownik WHERE login = ?', [login]);
         if (user && await bcrypt.compare(password, user.password)) {
-            const token = jwt.sign({ id: user.id_pracownik, login: user.login }, SECRET_KEY, { expiresIn: '2h' });
+            const token = jwt.sign({ id: user.id_pracownik, login: user.login }, SECRET_KEY, { expiresIn: '8h' });
             res.json({ token });
         } else { res.status(401).json({ message: "Błędny login lub hasło" }); }
     } catch (e) { res.status(500).json({ message: e.message }); }
@@ -98,7 +98,9 @@ app.get('/reservations/checkouts', async (req,res)=>{
             COUNT(*) AS total_checkouts
         FROM Rezerwacja
         WHERE date('now') LIKE data_wyjazdu`);
+    console.log (data);
     res.json(data);
+
 });
 
    
@@ -121,7 +123,7 @@ app.post('/rooms/add', async (req, res) => {
     try {
         await db.run(
             `INSERT INTO Pokoj (typ,ilosc_lozek, pietro , status) VALUES (?, ?, ?, ?)`,
-            [typ,ilosc_lozek,pietro,status || 'wolny']
+            [typ,ilosc_lozek,pietro,status || 'Wolny']
         );
         res.status(201).json({ message: "Dodano pokój pomyślnie" });
     } catch (e) {
@@ -136,14 +138,14 @@ app.get('/users/list', async (req, res) => {
 app.get('/rooms/list', async (req, res) => {
         const data = await db.all(`
         SELECT 
-            id_pokoj AS id, 
-            typ AS type, 
-            pietro AS name,
-            status AS status,
-            ilosc_lozek AS capacity
+            id_pokoj as id,
+            typ as type,
+            pietro as name, 
+            status,
+            ilosc_lozek as capacity
         FROM Pokoj
     `);
-     
+    
     res.json(data);
 });
 app.get('/rooms/summary', async (req, res) => {
@@ -151,10 +153,10 @@ app.get('/rooms/summary', async (req, res) => {
         
         SELECT 
             SUM(ilosc_lozek) AS total_beds,
-            SUM(CASE WHEN status = 'zajety' THEN ilosc_lozek ELSE 0 END) AS occupied_beds,
+            SUM(CASE WHEN status = 'Zajęty' THEN ilosc_lozek ELSE 0 END) AS occupied_beds,
             COUNT(*) AS total_rooms,
-            SUM(CASE WHEN status = 'zajety' THEN 1 ELSE 0 END) AS occupied_rooms,
-            SUM(CASE WHEN status = 'wolny' THEN 1 ELSE 0 END) AS free_rooms
+            SUM(CASE WHEN status = 'Zajęty' THEN 1 ELSE 0 END) AS occupied_rooms,
+            SUM(CASE WHEN status = 'Wolny' THEN 1 ELSE 0 END) AS free_rooms
         FROM Pokoj
     `);
     res.json(data);
@@ -162,25 +164,13 @@ app.get('/rooms/summary', async (req, res) => {
 
 
 
-/*
-api.get('/guests/count', async (req, res) => {
-    const data = await db.get(`
-        SELECT 
-            COUNT(*) AS total_guests WHERE INNER JOIN Rezerwacja ON Pokoj.id_pokoj = Rezerwacja.id_pokoj
-            WHERE date('now') BETWEEN Rezerwacja.data_przyjazdu AND Rezerwacja.data_wyjazdu
-        FROM Klient
-        INNER JOIN Rezerwacja ON Klient.id_klient = Rezerwacja.id_klient
-        WHERE date('now') BETWEEN Rezerwacja.data_przyjazdu AND Rezerwacja.data_wyjazdu
-    `);
-    res.json(data);
-});
-*/
 
 // Utworzenie rezerwacji
+
 app.post('/book', async (req, res) => {
     const d = req.body;
     try {
-       
+        
         const resultKlient = await db.run(
             `INSERT INTO Klient (imie, nazwisko, nr_tel, email) VALUES (?, ?, ?, ?)`,
             [d.imie, d.nazwisko, d.nr_tel,d.email]
@@ -188,13 +178,18 @@ app.post('/book', async (req, res) => {
 
         const idKlienta = resultKlient.lastID;
         const resultPokoj = await db.get(
-            `SELECT id_pokoj FROM Pokoj WHERE typ = ? AND status = 'wolny' LIMIT 1`,
+            `SELECT id_pokoj FROM Pokoj WHERE typ = ? AND status = 'Wolny' LIMIT 1`,
             [d.typ_pokoju]
            
         );
-        console.log(d.typ_pokoju);  
+        
         if (!resultPokoj) {
+            resultKlient = await db.run(
+                `DELETE FROM Klient WHERE id_klient = ?`,
+                [idKlienta]
+            );
             return res.status(400).json({ message: "Brak dostępnych pokoi tego typu" });
+            
         }
         await db.run(
             `INSERT INTO Rezerwacja 
@@ -204,15 +199,14 @@ app.post('/book', async (req, res) => {
             
         );
         await db.run(
-            `UPDATE Pokoj SET status = 'zajety' WHERE id_pokoj = ?`,
+            `UPDATE Pokoj SET status = 'Zajęty' WHERE id_pokoj = ?`,
             [resultPokoj.id_pokoj]
         );
         res.status(201).json({ message: "Zarezerwowano pomyślnie!" });
     } catch (err) {
-        console.error("Błąd bazy:", err.message); // To pokaże Ci dokładny błąd w konsoli serwera (node)
+        console.error("Wystąpił błąd podczas rezerwacji"); 
         res.status(500).json({ message: "Błąd bazy danych: " + err.message });
     }
-
 });
 
 app.listen(port);

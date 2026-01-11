@@ -3,13 +3,7 @@ import React, { useMemo, useState, useEffect} from "react";
 import { motion } from "framer-motion";
 import { useTableSearchSort } from "../hook/useTableSearchSort";
 
-const initialRoomsData = [
-  { id: 101, name: "Pokój 101", capacity: 2, floor: "1", status: "Wolny" },
-  { id: 102, name: "Pokój 102", capacity: 3, floor: "2", status: "Zajęty" },
-  { id: 103, name: "Pokój 103", capacity: 1, floor: "3", status: "Sprzątanie" },
-  { id: 104, name: "Pokój 104", capacity: 4, floor: "4", status: "Oczekujący" },
-  { id: 105, name: "Pokój 105", capacity: 2, floor: "5", status: "Wolny" },
-];
+
 
 const statusColors = {
   Wolny: "bg-emerald-500/15 text-emerald-400",
@@ -23,19 +17,18 @@ const roomTypes = ["POKÓJ CLASSIC", "POKÓJ DELUXE", "APARTAMET PAŁACOWY", "AP
 const AdminRooms = () => {
   const [filter, setFilter] = useState("Wszystkie");
 
-  // dane jako state, żeby dało się dodawać
-  const [rooms, setRooms] = useState(initialRoomsData);
-
+  const [rooms, setRooms] = useState([]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [form, setForm] = useState({
-    id: "",
-    name: "",
-    capacity: "",
-    floor: "",
-    status: "Wolny",
-  });
+
   const [error, setError] = useState("");
+
+  const [form, setForm] = useState({
+    typ: "",
+    ilosc_lozek:"",
+    pietro:"",
+    status:"Wolny"
+  });
 
   const {
     search,
@@ -45,8 +38,8 @@ const AdminRooms = () => {
     renderSortIcon,
   } = useTableSearchSort({
     data: rooms,
-    searchableFields: ["id", "name", "capacity", "type", "status"],
-    defaultSortKey: "id",
+    searchableFields: ["id_pokoj", "typ", "pietro", "status"],
+    defaultSortKey: "id_pokoju",
     defaultSortDirection: "asc",
   });
 
@@ -62,13 +55,10 @@ const AdminRooms = () => {
 
   const openModal = () => {
     setError("");
-    setForm({
-      id: "",
-      name: "",
-      capacity: "",
-      type: "",
-      status: "Wolny",
-    });
+    
+    
+    setForm({ typ: "", ilosc_lozek: "", pietro: "", status: "Wolny" });
+    
     setIsModalOpen(true);
   };
 
@@ -83,22 +73,21 @@ const AdminRooms = () => {
 
   const handleSave = async (e) => { 
 
-  const idNum = Number(form.id);
-  const capNum = Number(form.capacity);
 
-// 1. Walidacja typu pokoju
+  const capNum = parseInt(form.ilosc_lozek, 10);
+  const floorNum = parseInt(form.pietro, 10);
+  
   if (!form.typ) {
     setError("Wybierz typ pokoju.");
     return;
   }
 
-  // 2. Walidacja ilości łóżek
   if (isNaN(capNum) || capNum <= 0) {
     setError("Podaj poprawną ilość łóżek (liczba większa od 0).");
     return;
   }
 
-  // 3. Walidacja piętra (używamy floorNum zamiast idNum)
+
   if (form.pietro === "" || isNaN(floorNum)) {
     setError("Podaj poprawny numer piętra.");
     return;
@@ -111,13 +100,13 @@ const AdminRooms = () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        typ: form.type.trim(),
+        typ: form.typ,
         ilosc_lozek: capNum,
-        pietro: 1, 
+        pietro: floorNum,
         status: form.status,
       }),
     });
-
+    const result = await response.json();
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || "Błąd serwera");
@@ -125,11 +114,12 @@ const AdminRooms = () => {
 
   
     const newRoom = {
+      id_pokoj: result.id_pokoj  || result.insertId,
       typ: form.typ,
       ilosc_lozek: capNum,
       pietro: floorNum,
-      status: form.status,
-    };
+      status: form.status
+    };    
 
     setRooms((prev) => [...prev, newRoom]);
     setIsModalOpen(false);

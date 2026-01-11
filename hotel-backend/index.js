@@ -3,7 +3,6 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const sqlite3 = require('sqlite3');
-
 const { open } = require('sqlite');
 
 
@@ -85,6 +84,7 @@ app.get('/reservations/guestcount', async (req, res) => {
 app.get('/reservations/summary', async (req, res) => {
     const data = await db.get(`
         SELECT 
+        
             COUNT(*) AS total_reservations,
             SUM(liczba_gosci) AS total_guests
         FROM Rezerwacja
@@ -92,6 +92,14 @@ app.get('/reservations/summary', async (req, res) => {
     res.json(data);
 });
 
+app.get('/reservations/checkouts', async (req,res)=>{
+    const data = await db.get(`
+        SELECT 
+            COUNT(*) AS total_checkouts
+        FROM Rezerwacja
+        WHERE date('now') LIKE data_wyjazdu`);
+    res.json(data);
+});
 
    
 app.get('/users/list', async (req, res) => {
@@ -129,8 +137,8 @@ app.get('/rooms/list', async (req, res) => {
         const data = await db.all(`
         SELECT 
             id_pokoj AS id, 
-            typ AS name, 
-            pietro AS floor,
+            typ AS type, 
+            pietro AS name,
             status AS status,
             ilosc_lozek AS capacity
         FROM Pokoj

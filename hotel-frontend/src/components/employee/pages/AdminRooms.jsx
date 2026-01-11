@@ -4,11 +4,11 @@ import { motion } from "framer-motion";
 import { useTableSearchSort } from "../hook/useTableSearchSort";
 
 const initialRoomsData = [
-  { id: 101, name: "Pokój 101", capacity: 2, type: "Standard", status: "Wolny" },
-  { id: 102, name: "Pokój 102", capacity: 3, type: "Deluxe", status: "Zajęty" },
-  { id: 103, name: "Pokój 103", capacity: 1, type: "Standard", status: "Sprzątanie" },
-  { id: 104, name: "Pokój 104", capacity: 4, type: "Apartament", status: "Oczekujący" },
-  { id: 105, name: "Pokój 105", capacity: 2, type: "Deluxe", status: "Wolny" },
+  { id: 101, name: "Pokój 101", capacity: 2, floor: "1", status: "Wolny" },
+  { id: 102, name: "Pokój 102", capacity: 3, floor: "2", status: "Zajęty" },
+  { id: 103, name: "Pokój 103", capacity: 1, floor: "3", status: "Sprzątanie" },
+  { id: 104, name: "Pokój 104", capacity: 4, floor: "4", status: "Oczekujący" },
+  { id: 105, name: "Pokój 105", capacity: 2, floor: "5", status: "Wolny" },
 ];
 
 const statusColors = {
@@ -18,7 +18,7 @@ const statusColors = {
   Oczekujący: "bg-sky-500/15 text-sky-400",
 };
 
-const roomTypes = ["Standard", "Deluxe", "Apartament"];
+const roomTypes = ["POKÓJ CLASSIC", "POKÓJ DELUXE", "APARTAMET PAŁACOWY", "APARTAMENT DELUXE"];
 
 const AdminRooms = () => {
   const [filter, setFilter] = useState("Wszystkie");
@@ -86,21 +86,28 @@ const AdminRooms = () => {
   const idNum = Number(form.id);
   const capNum = Number(form.capacity);
 
-  if (!Number.isInteger(idNum) || idNum <= 0) {
-    setError("Podaj poprawny numer pokoju.");
-    return;
-  }
-  if (!form.name.trim() || !form.type.trim()) {
-    setError("Wypełnij wszystkie pola.");
-    return;
-  }
-  if (rooms.some((r) => r.id === idNum)) {
-    setError(`Pokój o numerze ${idNum} już istnieje.`);
+// 1. Walidacja typu pokoju
+  if (!form.typ) {
+    setError("Wybierz typ pokoju.");
     return;
   }
 
+  // 2. Walidacja ilości łóżek
+  if (isNaN(capNum) || capNum <= 0) {
+    setError("Podaj poprawną ilość łóżek (liczba większa od 0).");
+    return;
+  }
+
+  // 3. Walidacja piętra (używamy floorNum zamiast idNum)
+  if (form.pietro === "" || isNaN(floorNum)) {
+    setError("Podaj poprawny numer piętra.");
+    return;
+  }
+  
+
   try {
-    const response = await fetch('http://localhost:3000/rooms/add', { // 2. Added await
+    const response = await fetch('http://localhost:3000/rooms/add', { 
+    
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -118,10 +125,9 @@ const AdminRooms = () => {
 
   
     const newRoom = {
-      id: idNum,
-      name: form.name.trim(),
-      capacity: capNum,
-      type: form.type.trim(),
+      typ: form.typ,
+      ilosc_lozek: capNum,
+      pietro: floorNum,
       status: form.status,
     };
 
@@ -130,7 +136,7 @@ const AdminRooms = () => {
     
   } catch (error) {
     console.error("Błąd podczas dodawania pokoju:", error);
-    setError(error.message); // This will show the actual database error to the user
+    setError(error.message); 
   }
 };
   const fetchedRooms = async () => {
@@ -216,7 +222,7 @@ const AdminRooms = () => {
                   onClick={() => handleSort("name")}
                   className="inline-flex items-center gap-1 hover:text-white"
                 >
-                  Nazwa
+                  Piętro
                   {renderSortIcon("name")}
                 </button>
               </th>
@@ -291,93 +297,50 @@ const AdminRooms = () => {
       </div>
 
       {/* Modal dodawania pokoju */}
+      
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.2 }}
-            className="bg-slate-800 p-6 rounded-xl w-full max-w-md shadow-xl"
-          >
-            <h2 className="text-xl font-semibold mb-4">Dodaj pokój</h2>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-slate-800 p-6 rounded-xl w-full max-w-md border border-slate-700 shadow-2xl">
+            <h2 className="text-xl font-semibold mb-1 text-white">Dodaj nowy pokój</h2>
+            <p className="text-xs text-slate-400 mb-6 uppercase tracking-wider">Formularz zasobów</p>
+            
+            {error && <div className="mb-4 p-2 bg-red-500/20 border border-red-500/50 text-red-200 text-xs rounded">{error}</div>}
 
-            {error && (
-              <div className="mb-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
-                {error}
+            <div className="space-y-4">
+        
+              <div>
+                <label className="block text-xs text-slate-400 mb-1 font-semibold">TYP POKOJU</label>
+                <select className="w-full p-2.5 rounded bg-slate-900 border border-slate-700 text-white outline-none focus:border-indigo-500" value={form.typ} onChange={handleChange("typ")}>
+                  <option value="">— wybierz typ —</option>
+                  {roomTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
               </div>
-            )}
 
-            <input
-              type="number"
-              placeholder="Nr pokoju (np. 101)"
-              className="w-full p-3 rounded bg-slate-700 placeholder-slate-400 text-white mb-3"
-              value={form.id}
-              onChange={handleChange("id")}
-            />
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1 font-semibold">ILOŚĆ ŁÓŻEK</label>
+                  <input type="number" min="1" placeholder="np. 2" className="w-full p-2.5 rounded bg-slate-900 border border-slate-700 text-white outline-none focus:border-indigo-500" value={form.ilosc_lozek} onChange={handleChange("ilosc_lozek")} />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1 font-semibold">PIĘTRO</label>
+                  <input type="number" placeholder="np. 1" className="w-full p-2.5 rounded bg-slate-900 border border-slate-700 text-white outline-none focus:border-indigo-500" value={form.pietro} onChange={handleChange("pietro")} />
+                </div>
+              </div>
 
-            <input
-              type="text"
-              placeholder="Nazwa (np. Pokój dwuosobowy classic)"
-              className="w-full p-3 rounded bg-slate-700 placeholder-slate-400 text-white mb-3"
-              value={form.name}
-              onChange={handleChange("name")}
-            />
-
-            <input
-              type="number"
-              placeholder="Ilość osób (np. 2)"
-              className="w-full p-3 rounded bg-slate-700 placeholder-slate-400 text-white mb-3"
-              value={form.capacity}
-              onChange={handleChange("capacity")}
-            />
-
-            <div className="mb-4">
-  <label className="block text-sm mb-1 text-slate-300">
-    Typ pokoju
-  </label>
-  <select
-    value={form.type}
-    onChange={handleChange("type")}
-    className="w-full p-3 rounded bg-slate-700 text-white text-sm
-               focus:outline-none focus:ring-2 focus:ring-indigo-500"
-  >
-    <option value="">— wybierz typ —</option>
-    {roomTypes.map((type) => (
-      <option key={type} value={type}>
-        {type}
-      </option>
-    ))}
-  </select>
-</div>
-
-            <div className="mb-4">
-              <label className="block text-sm mb-1 text-slate-300">Status</label>
-              <select
-                value={form.status}
-                onChange={handleChange("status")}
-                className="w-full p-3 rounded bg-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option>Wolny</option>
-                <option>Zajęty</option>
-                <option>Sprzątanie</option>
-                <option>Oczekujący</option>
-              </select>
+              {/* Status */}
+              <div>
+                <label className="block text-xs text-slate-400 mb-1 font-semibold">STATUS POCZĄTKOWY</label>
+                <select className="w-full p-2.5 rounded bg-slate-900 border border-slate-700 text-white outline-none focus:border-indigo-500" value={form.status} onChange={handleChange("status")}>
+                  {Object.keys(statusColors).map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
             </div>
 
-            <div className="flex justify-end gap-3 mt-4">
-              <button
-                onClick={closeModal}
-                className="px-4 py-2 rounded-lg bg-slate-600 hover:bg-slate-500 transition"
-              >
-                Anuluj
-              </button>
-
-              <button
-                onClick={handleSave}
-                className="px-4 py-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 transition text-white"
-              >
-                Zapisz
+            <div className="flex justify-end gap-3 mt-8">
+              <button onClick={closeModal} className="px-4 py-2 text-slate-400 hover:text-white transition text-sm">Anuluj</button>
+              <button onClick={handleSave} className="px-6 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 font-medium transition shadow-lg shadow-indigo-500/20 text-sm">
+                Dodaj pokój
               </button>
             </div>
           </motion.div>

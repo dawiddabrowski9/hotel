@@ -12,7 +12,9 @@ const AdminDashboard = ({ setSelected }) => {
     today_reservations: 0,
     total_guests: 0
   });
-
+  const [checkoutSummary, setCheckoutSummary] = useState({
+    total_checkouts: 0
+  });
   const [roomSummary, setRoomSummary] = useState({
     occupied_beds: 0,
     total_beds: 0,
@@ -21,14 +23,18 @@ const AdminDashboard = ({ setSelected }) => {
     free_rooms: 0
     
   });
-
+  const currentDate = new Date();
+  const formattedDate = currentDate.toISOString().split('T')[0];
+  const currentTime = currentDate.toTimeString().split(' ')[0];
   const [guestCount, setGuestCount] = useState(0);  
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchSummary = async () => {
       try {
-        
+        const checkoutResponse = await fetch('http://localhost:3000/reservations/checkouts');
+        const checkoutData = await checkoutResponse.json();
+        setCheckoutSummary(checkoutData);    
         const roomResponse = await fetch('http://localhost:3000/rooms/summary');
         const roomData = await roomResponse.json();
         setRoomSummary(roomData);
@@ -72,10 +78,10 @@ const AdminDashboard = ({ setSelected }) => {
           onClick={() => setSelected("Sprzątanie")}
           className="bg-slate-800 rounded-xl p-16 shadow-lg border border-slate-700 cursor-pointer hover:bg-slate-700 transition"
         >
-          <p className="text-l text-slate-400">Dzisiejszy przychód</p>
-          <p className="mt-2 text-4xl font-bold text-emerald-400">12 350 zł</p>
+          <p className="text-l text-slate-400">Dzisiejsze check-outy</p>
+          <p className="mt-2 text-4xl font-bold text-red-400">{checkoutSummary.total_checkouts}</p>
           <p className="mt-1 text-xs text-slate-400">
-            z rezerwacji online i na recepcji
+            
           </p>
         </div>
 
@@ -93,7 +99,7 @@ const AdminDashboard = ({ setSelected }) => {
         <div className="bg-slate-800 rounded-xl p-16 shadow-lg border border-slate-700">
           <p className="text-l text-slate-400">Dzisiejsze check-iny</p>
           <p className="mt-2 text-4xl font-bold text-amber-400">{reservationSummary.total_guests}</p>
-          <p className="mt-1 text-xs text-slate-400">{Date.now()}</p>
+          <p className="mt-1 text-xs text-slate-400">Ostatnia synchronizacja: {formattedDate}       {currentTime}</p>
         </div>
       </div>
 

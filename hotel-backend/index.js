@@ -72,7 +72,6 @@ app.get('/currentuserinfo', async (req, res) => {
     }
 });
 
-
 app.get('/reservations/guestcount', async (req, res) => {
     const data = await db.get(`
         SELECT 
@@ -81,15 +80,17 @@ app.get('/reservations/guestcount', async (req, res) => {
         WHERE date('now') BETWEEN data_przyjazdu AND data_wyjazdu`);
     res.json(data);
 });
+
 app.get('/reservations/summary', async (req, res) => {
     const data = await db.get(`
         SELECT 
-        
             COUNT(*) AS total_reservations,
             SUM(liczba_gosci) AS total_guests
         FROM Rezerwacja
         WHERE date('now') LIKE data_przyjazdu`);
     res.json(data);
+    
+    console.log(data)
 });
 
 app.get('/reservations/checkouts', async (req,res)=>{
@@ -145,7 +146,6 @@ app.get('/rooms/list', async (req, res) => {
             ilosc_lozek as capacity
         FROM Pokoj
     `);
-    
     res.json(data);
 });
 app.get('/rooms/summary', async (req, res) => {
@@ -162,6 +162,17 @@ app.get('/rooms/summary', async (req, res) => {
     res.json(data);
 });
 
+app.get('/cleaning/list', async (req, res)=>{
+    const data = await db.all(`
+        SELECT
+            id_pokoj AS id,
+            id_pracownik AS people,
+            status 
+        FROM Sprzatanie
+        
+        `);
+    res.json(data);
+});
 
 
 

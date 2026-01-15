@@ -1,5 +1,5 @@
 // src\components\employee\pages\AdminRoomCleaning.jsx
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState,useEffect } from "react";
 import { motion } from "framer-motion";
 import { useTableSearchSort } from "../hook/useTableSearchSort";
 
@@ -21,14 +21,14 @@ export default function AdminRoomCleaning() {
   const [filter, setFilter] = useState("Wszystkie");
 
   // dane jako state (żeby dało się dodawać)
-  const [rooms, setRooms] = useState(initialRoomsData);
-
+  const [rooms,setRooms] = useState([]);
+  
   // modal + formularz
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState({
     id: "",
     people: "",
-    status: "Wolny",
+    status: ""
   });
   const [error, setError] = useState("");
 
@@ -97,7 +97,18 @@ export default function AdminRoomCleaning() {
     setRooms((prev) => [...prev, newRow]);
     setIsModalOpen(false);
   };
-
+  const fetchedCleaning = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/cleaning/list');
+        const data = await response.json();
+        setRooms(data);
+      } catch (error) {
+        console.error("Błąd podczas pobierania listy pokoi do sprzątania:", error);
+      }
+    };
+    useEffect(() => {
+      fetchedCleaning();
+    }, []);
   return (
     <section>
       <div className="flex items-center justify-between mb-6">

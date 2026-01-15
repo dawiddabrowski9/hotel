@@ -1,21 +1,22 @@
-// src\components\employee\pages\AdminDashboard.jsx
+
 import React,{useState,useEffect}from "react";
-
-
-
-
 
 
 const AdminDashboard = ({ setSelected }) => {
 
   const [reservationSummary, setReservationSummary] = useState({
+
     today_reservations: 0,
     total_guests: 0
+    
   });
   const [checkoutSummary, setCheckoutSummary] = useState({
+
     total_checkouts: 0
+
   });
   const [roomSummary, setRoomSummary] = useState({
+
     occupied_beds: 0,
     total_beds: 0,
     total_rooms: 0,
@@ -38,8 +39,11 @@ const AdminDashboard = ({ setSelected }) => {
         const roomResponse = await fetch('http://localhost:3000/rooms/summary');
         const roomData = await roomResponse.json();
         setRoomSummary(roomData);
-
-
+        /*
+        if(total_guests == null){
+          total_guests=0;
+        }
+        */
         const res = await fetch('http://localhost:3000/reservations/summary');
         const reservationData = await res.json();
         setReservationSummary(reservationData);

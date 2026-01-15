@@ -7,6 +7,7 @@ import AdminRooms from "./pages/AdminRooms";
 import AdminMembers from "./pages/AdminMembers";
 import AdminSidebar from "./pages/AdminSideBar";
 import AdminReservationsList from "./pages/AdminListReservation";
+import AdminMeelList from "./pages/AdminMealList"
 
 const AdminPanel = () => {
   const [selected, setSelected] = useState("DashBoard");
@@ -31,6 +32,7 @@ const ExampleContent = ({ selected, setSelected }) => (
     {selected === "Lista pokoi" && <AdminRooms />}
     {selected === "Członkowie" && <AdminMembers />}
     {selected === "Lista rezerwacji" && <AdminReservationsList />}
+    {selected === "Lista posiłków" && <AdminMeelList />}
   </div>
 );
 

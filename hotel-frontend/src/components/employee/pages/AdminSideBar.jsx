@@ -7,8 +7,8 @@ import {
   FiMonitor,
   FiUsers,
 } from "react-icons/fi";
-import { MdCleaningServices } from "react-icons/md";
 import { BiBed } from "react-icons/bi";
+import { MdCleaningServices, MdOutlineEventNote } from "react-icons/md";
 
 const AdminSidebar = ({ selected, setSelected }) => {
   const [open, setOpen] = useState(true);
@@ -75,6 +75,7 @@ const AdminSidebar = ({ selected, setSelected }) => {
         <Option Icon={FiMonitor} title="Rezerwacja" selected={selected} setSelected={setSelected} open={open} />
         <Option Icon={BiBed} title="Lista pokoi" selected={selected} setSelected={setSelected} open={open} />
         <Option Icon={FiUsers} title="Członkowie" selected={selected} setSelected={setSelected} open={open} />
+        <Option Icon={MdOutlineEventNote} title="Lista rezerwacji" selected={selected} setSelected={setSelected} open={open} />
       </div>
 
       <ToggleClose open={open} setOpen={setOpen} />

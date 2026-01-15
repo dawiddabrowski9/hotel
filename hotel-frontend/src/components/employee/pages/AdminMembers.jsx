@@ -1,15 +1,17 @@
 // src/components/employee/pages/AdminMembers.jsx
-import React, { useState,useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useTableSearchSort } from "../hook/useTableSearchSort";
 
-
+const API_BASE = "http://localhost:3000";
 
 const AdminMembers = () => {
-  
- 
   const [members, setMembers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // add | edit
+  const [mode, setMode] = useState("add");
+  const [selectedMember, setSelectedMember] = useState(null);
 
   const [form, setForm] = useState({
     firstName: "",
@@ -22,6 +24,33 @@ const AdminMembers = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
 
+  // --- Fetch list (backend optional) ---
+  useEffect(() => {
+    const fetchMembers = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/users/list`);
+        const data = await res.json();
+
+        // Normalizacja na wypadek różnych nazw pól
+        const normalized = Array.isArray(data)
+          ? data.map((u) => ({
+              id: u.id ?? u.id_pracownik ?? u._id ?? Math.random(),
+              firstName: u.firstName ?? u.imie ?? "",
+              lastName: u.lastName ?? u.nazwisko ?? "",
+              login: u.login ?? "",
+              role: u.role ?? u.stanowisko ?? "Recepcjonista",
+            }))
+          : [];
+
+        setMembers(normalized);
+      } catch (e) {
+        // backend może nie działać — UI nadal działa na state
+        console.warn("Nie udało się pobrać users/list:", e);
+      }
+    };
+    fetchMembers();
+  }, []);
+
   const { search, setSearch, handleSort, data: sortedData, renderSortIcon } =
     useTableSearchSort({
       data: members,
@@ -29,94 +58,184 @@ const AdminMembers = () => {
       defaultSortKey: "lastName",
       defaultSortDirection: "asc",
     });
-     useEffect(() => {
-    const fetchMembers = async () => {
-      try {
-        const response = await fetch('http://localhost:3000/users/list');
-        const data = await response.json();
-        setMembers(data);
-      } catch (error) {
-        console.error("Błąd podczas pobierania listy użytkowników:", error);
-      } 
-    };
 
-    fetchMembers();
-  }, []);
+  const roleBadgeClass = (role) => {
+    if (role === "Admin") return "bg-red-500/15 text-red-400 border border-red-500/20";
+    if (role === "Recepcjonista")
+      return "bg-indigo-500/15 text-indigo-300 border border-indigo-500/20";
+    return "bg-slate-700/60 text-slate-200 border border-slate-600/40";
+  };
 
-
-  const openModal = () => {
-    setError("");
+  const resetForm = () => {
     setForm({ firstName: "", lastName: "", login: "", role: "Recepcjonista" });
     setPassword("");
+    setShowPassword(false);
+    setError("");
+  };
+
+  const openAddModal = () => {
+    setMode("add");
+    setSelectedMember(null);
+    resetForm();
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (member) => {
+    setMode("edit");
+    setSelectedMember(member);
+    setError("");
+    setForm({
+      firstName: member.firstName || "",
+      lastName: member.lastName || "",
+      login: member.login || "",
+      role: member.role || "Recepcjonista",
+    });
+    setPassword(""); // w edycji hasło opcjonalne
     setShowPassword(false);
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
+    setSelectedMember(null);
     setError("");
   };
 
-  const handleSave = (e) => {
-    setError("");
-    e.preventDefault();
-    try {
-      const response = fetch('http://localhost:3000/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },  
-        body: JSON.stringify({
-          imie: form.firstName,
-          nazwisko: form.lastName,
-          login: form.login,
-          password: password,
-          stanowisko: form.role
-        })
-      });
-      addMember();
-    } catch (err) {
-      setError("Wystąpił błąd podczas dodawania użytkownika.");
-    } 
+  const trimmed = useMemo(() => {
+    return {
+      firstName: form.firstName.trim(),
+      lastName: form.lastName.trim(),
+      login: form.login.trim(),
+    };
+  }, [form.firstName, form.lastName, form.login]);
 
-    const firstName = form.firstName.trim();
-    const lastName = form.lastName.trim();
-    const login = form.login.trim();
+  const isLoginTaken = (login) => {
+    const target = login.toLowerCase();
+    return members.some((m) => {
+      const sameLogin = (m.login || "").toLowerCase() === target;
+      const notSelf = mode === "edit" ? m.id !== selectedMember?.id : true;
+      return sameLogin && notSelf;
+    });
+  };
 
-    if (!firstName || !lastName) {
+  const validate = () => {
+    if (!trimmed.firstName || !trimmed.lastName) {
       setError("Podaj imię i nazwisko.");
-      return;
+      return false;
     }
-    if (!login) {
+    if (!trimmed.login) {
       setError("Podaj login.");
-      return;
+      return false;
     }
-    if (members.some((m) => m.login.toLowerCase() === login.toLowerCase())) {
+    if (isLoginTaken(trimmed.login)) {
       setError("Login jest już zajęty.");
-      return;
+      return false;
     }
-    if (password.length < 8) {
-      setError("Hasło musi mieć minimum 8 znaków.");
+
+    if (mode === "add") {
+      if (password.length < 8) {
+        setError("Hasło musi mieć minimum 8 znaków.");
+        return false;
+      }
+    } else {
+      // edit: hasło opcjonalne, ale jeśli wpisane to >= 8
+      if (password.length > 0 && password.length < 8) {
+        setError("Jeśli zmieniasz hasło, musi mieć minimum 8 znaków.");
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // --- Submit (działa na state; backend kolega podepnie) ---
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    if (!validate()) return;
+
+    if (mode === "add") {
+      // FRONT: dodaj do state
+      const nextId = members.length
+        ? Math.max(...members.map((m) => Number(m.id) || 0)) + 1
+        : 1;
+
+      const newMember = {
+        id: nextId,
+        firstName: trimmed.firstName,
+        lastName: trimmed.lastName,
+        login: trimmed.login,
+        role: form.role,
+      };
+
+      setMembers((prev) => [...prev, newMember]);
+      setIsModalOpen(false);
+
+      // BACKEND (opcjonalnie): rejestracja
+      // kolega może to zostawić jak jest albo podmienić
+      try {
+        await fetch(`${API_BASE}/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            imie: trimmed.firstName,
+            nazwisko: trimmed.lastName,
+            login: trimmed.login,
+            stanowisko: form.role,
+            password,
+          }),
+        });
+      } catch (_) {}
+
       return;
     }
 
-    const nextId = members.length ? Math.max(...members.map((m) => m.id)) + 1 : 1;
+    // mode === edit
+    if (!selectedMember) return;
 
-    const newMember = {
-      id: nextId,
-      firstName,
-      lastName,
-      login,
+    const updatedMember = {
+      ...selectedMember,
+      firstName: trimmed.firstName,
+      lastName: trimmed.lastName,
+      login: trimmed.login,
       role: form.role,
-      password,
     };
 
-    setMembers((prev) => [...prev, newMember]);
+    // FRONT: update w state
+    setMembers((prev) => prev.map((m) => (m.id === selectedMember.id ? updatedMember : m)));
     setIsModalOpen(false);
+    setSelectedMember(null);
+
+    // BACKEND (opcjonalnie): update
+    // kolega podepnie endpoint /users/:id
+    try {
+      await fetch(`${API_BASE}/users/${selectedMember.id}`, {
+        method: "PUT", // albo PATCH
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imie: trimmed.firstName,
+          nazwisko: trimmed.lastName,
+          login: trimmed.login,
+          stanowisko: form.role,
+          ...(password ? { password } : {}),
+        }),
+      });
+    } catch (_) {}
   };
 
-  const roleBadgeClass = (role) => {
-    if (role === "Admin") return "bg-red-500/15 text-red-400 border border-red-500/20";
-    if (role === "Recepcjonista") return "bg-indigo-500/15 text-indigo-300 border border-indigo-500/20";
-    return "bg-slate-700/60 text-slate-200 border border-slate-600/40";
+  const handleDelete = async () => {
+    if (!selectedMember) return;
+
+    // FRONT: delete w state
+    setMembers((prev) => prev.filter((m) => m.id !== selectedMember.id));
+    setIsModalOpen(false);
+    setSelectedMember(null);
+
+    // BACKEND (opcjonalnie): delete
+    try {
+      await fetch(`${API_BASE}/users/${selectedMember.id}`, {
+        method: "DELETE",
+      });
+    } catch (_) {}
   };
 
   return (
@@ -124,11 +243,11 @@ const AdminMembers = () => {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold">Członkowie</h1>
-          <p className="text-sm text-slate-400">Lista użytkowników systemu.</p>
+          <p className="text-sm text-slate-400">Kliknij w osobę, aby edytować.</p>
         </div>
 
         <button
-          onClick={openModal}
+          onClick={openAddModal}
           className="px-4 py-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-sm font-medium text-white transition"
         >
           + Dodaj użytkownika
@@ -198,17 +317,13 @@ const AdminMembers = () => {
               sortedData.map((m) => (
                 <tr
                   key={m.id}
-                  className="border-t border-slate-700/60 hover:bg-slate-800/70 transition"
+                  onClick={() => openEditModal(m)}
+                  className="border-t border-slate-700/60 hover:bg-slate-800/70 transition cursor-pointer"
+                  title="Kliknij aby edytować"
                 >
-                  <td className="px-4 py-3 text-left text-slate-100 truncate">
-                    {m.firstName}
-                  </td>
-                  <td className="px-4 py-3 text-left text-slate-100 truncate">
-                    {m.lastName}
-                  </td>
-                  <td className="px-4 py-3 text-left text-slate-300 truncate">
-                    {m.login}
-                  </td>
+                  <td className="px-4 py-3 text-left text-slate-100 truncate">{m.firstName}</td>
+                  <td className="px-4 py-3 text-left text-slate-100 truncate">{m.lastName}</td>
+                  <td className="px-4 py-3 text-left text-slate-300 truncate">{m.login}</td>
                   <td className="px-4 py-3 text-center">
                     <span
                       className={`inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-medium ${roleBadgeClass(
@@ -241,7 +356,9 @@ const AdminMembers = () => {
             transition={{ duration: 0.18 }}
             className="bg-slate-800 p-6 rounded-xl w-full max-w-md shadow-xl border border-slate-700"
           >
-            <h2 className="text-xl font-semibold mb-4">Dodaj użytkownika</h2>
+            <h2 className="text-xl font-semibold mb-4">
+              {mode === "add" ? "Dodaj użytkownika" : "Edytuj użytkownika"}
+            </h2>
 
             {error && (
               <div className="mb-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
@@ -249,79 +366,102 @@ const AdminMembers = () => {
               </div>
             )}
 
-            <input
-              type="text"
-              placeholder="Imię"
-              className="w-full p-3 rounded bg-slate-700 placeholder-slate-400 text-white mb-3"
-              value={form.firstName}
-              onChange={(e) => setForm((p) => ({ ...p, firstName: e.target.value }))}
-            />
+            <form onSubmit={handleSubmit}>
+              <input
+                type="text"
+                placeholder="Imię"
+                className="w-full p-3 rounded bg-slate-700 placeholder-slate-400 text-white mb-3"
+                value={form.firstName}
+                onChange={(e) => setForm((p) => ({ ...p, firstName: e.target.value }))}
+              />
 
-            <input
-              type="text"
-              placeholder="Nazwisko"
-              className="w-full p-3 rounded bg-slate-700 placeholder-slate-400 text-white mb-3"
-              value={form.lastName}
-              onChange={(e) => setForm((p) => ({ ...p, lastName: e.target.value }))}
-            />
+              <input
+                type="text"
+                placeholder="Nazwisko"
+                className="w-full p-3 rounded bg-slate-700 placeholder-slate-400 text-white mb-3"
+                value={form.lastName}
+                onChange={(e) => setForm((p) => ({ ...p, lastName: e.target.value }))}
+              />
 
-            <input
-              type="text"
-              placeholder="Login"
-              className="w-full p-3 rounded bg-slate-700 placeholder-slate-400 text-white mb-3"
-              value={form.login}
-              onChange={(e) => setForm((p) => ({ ...p, login: e.target.value }))}
-            />
+              <input
+                type="text"
+                placeholder="Login"
+                className="w-full p-3 rounded bg-slate-700 placeholder-slate-400 text-white mb-3"
+                value={form.login}
+                onChange={(e) => setForm((p) => ({ ...p, login: e.target.value }))}
+              />
 
-            <select
-              value={form.role}
-              onChange={(e) => setForm((p) => ({ ...p, role: e.target.value }))}
-              className="w-full p-3 rounded bg-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-3"
-            >
-              <option value="Recepcjonista">Recepcjonista</option>
-              <option value="Admin">Admin</option>
-            </select>
+              <select
+                value={form.role}
+                onChange={(e) => setForm((p) => ({ ...p, role: e.target.value }))}
+                className="w-full p-3 rounded bg-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-3"
+              >
+                <option value="Recepcjonista">Recepcjonista</option>
+                <option value="Admin">Admin</option>
+              </select>
 
-            {/* Password */}
-            <div className="mb-4">
-              <label className="block text-sm mb-1 text-slate-300">Hasło</label>
-              <div className="flex gap-2">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Minimum 8 znaków"
-                  className="w-full p-3 rounded bg-slate-700 placeholder-slate-400 text-white"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+              {/* Password */}
+              <div className="mb-4">
+                <label className="block text-sm mb-1 text-slate-300">
+                  Hasło{" "}
+                  {mode === "edit" ? (
+                    <span className="text-slate-400">(opcjonalnie – tylko jeśli chcesz zmienić)</span>
+                  ) : null}
+                </label>
+
+                <div className="flex gap-2">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder={
+                      mode === "edit" ? "Zostaw puste, jeśli bez zmian" : "Minimum 8 znaków"
+                    }
+                    className="w-full p-3 rounded bg-slate-700 placeholder-slate-400 text-white"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="px-3 rounded bg-slate-700 hover:bg-slate-600 text-slate-100 text-sm"
+                    title={showPassword ? "Ukryj hasło" : "Pokaż hasło"}
+                  >
+                    {showPassword ? "Ukryj" : "Pokaż"}
+                  </button>
+                </div>
+
+                <p className="mt-2 text-xs text-slate-400">
+                  Demo (frontend). Hasło i tak powinno być ogarniane po backendzie.
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-4">
+                {mode === "edit" && (
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    className="mr-auto px-4 py-2 rounded-lg bg-red-500/80 hover:bg-red-500 transition text-white"
+                  >
+                    Usuń
+                  </button>
+                )}
+
                 <button
                   type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="px-3 rounded bg-slate-700 hover:bg-slate-600 text-slate-100 text-sm"
-                  title={showPassword ? "Ukryj hasło" : "Pokaż hasło"}
+                  onClick={closeModal}
+                  className="px-4 py-2 rounded-lg bg-slate-600 hover:bg-slate-500 transition"
                 >
-                  {showPassword ? "Ukryj" : "Pokaż"}
+                  Anuluj
+                </button>
+
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 transition text-white"
+                >
+                  {mode === "add" ? "Zapisz" : "Zapisz zmiany"}
                 </button>
               </div>
-              <p className="mt-2 text-xs text-slate-400">
-                Demo (frontend). W realnym systemie hasło powinno być obsłużone po stronie backendu.
-              </p>
-            </div>
-
-            <div className="flex justify-end gap-3 mt-4">
-              <button
-                onClick={closeModal}
-                className="px-4 py-2 rounded-lg bg-slate-600 hover:bg-slate-500 transition"
-              >
-                Anuluj
-              </button>
-
-              <button
-                onClick={handleSave}
-                className="px-4 py-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 transition text-white"
-              >
-                Zapisz
-              </button>
-            </div>
+            </form>
           </motion.div>
         </div>
       )}

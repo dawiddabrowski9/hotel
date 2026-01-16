@@ -4,14 +4,14 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const sqlite3 = require('sqlite3');
 const { open } = require('sqlite');
-
+require('dotenv').config({ path: 'secrets.env' });
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const port = 3000;
-const SECRET_KEY = 'Hotel_Pro_2025'; // przenieść do .env
+const port = 3000
+const SECRET_KEY = ('process.secrets.env.SECRET_KEY')
 
 let db;
 // ŻEBY ODPALIĆ APLIKACJE ROBIMY NPM RUN DEV W GŁÓWNYM KATALOGU (HOTEL)
@@ -104,7 +104,6 @@ app.get('/reservations/checkouts', async (req,res)=>{
 
 });
 
-   
 app.get('/users/list', async (req, res) => {
 
     const data = await db.all(`
@@ -169,14 +168,30 @@ app.get('/cleaning/list', async (req, res)=>{
             id_pracownik AS people,
             status 
         FROM Sprzatanie
-        
+
         `);
     res.json(data);
 });
 
 
 
-// Utworzenie rezerwacji
+
+app.post('/breakfast/add', async(req,res)=>{
+    const d = req.body;
+
+    try{
+        const resultBreakfast = await db.run(
+            `INSERT INTO Sniadanie (data, id_pokoju, id_dania) VALUES (? ,? ,?)`,
+            [d.data,d.id_pokoju,d.id_dania]
+        );
+    }
+    catch(err){
+        console.error("Wystąpił błąd podczas dodawania"); 
+        res.status(500).json({ message: "Błąd bazy danych: " + err.message });
+    }
+});
+
+app.get(`b`)
 
 app.post('/book', async (req, res) => {
     const d = req.body;

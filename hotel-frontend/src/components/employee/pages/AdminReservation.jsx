@@ -1,17 +1,17 @@
-//src\components\employee\pages\AdminReservation.jsx
+// src/components/employee/pages/AdminReservation.jsx
 import React, { useState } from "react";
 import BackButton from "../components/BackButton";
 
 export default function AdminReservation({ onBack }) {
   const [reservationForm, setReservationForm] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     phone: "",
     arrivalDate: "",
     departureDate: "",
     people: 1,
     roomType: "Standard",
-    paymentMethod: "Karta płatnicza",
   });
 
   const handleReservationChange = (e) => {
@@ -30,14 +30,14 @@ export default function AdminReservation({ onBack }) {
 
   const handleClear = () => {
     setReservationForm({
-      name: "",
+      firstName: "",
+      lastName: "",
       email: "",
       phone: "",
       arrivalDate: "",
       departureDate: "",
       people: 1,
       roomType: "Standard",
-      paymentMethod: "Karta płatnicza",
     });
   };
 
@@ -50,6 +50,7 @@ export default function AdminReservation({ onBack }) {
         </div>
         <BackButton onClick={onBack} label="Powrót" />
       </div>
+
       <section>
         <form
           onSubmit={handleReservationSubmit}
@@ -61,19 +62,36 @@ export default function AdminReservation({ onBack }) {
               Dane klienta
             </h2>
 
-            <div>
-              <label className="block text-xs text-slate-300 mb-1">
-                Imię i nazwisko
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={reservationForm.name}
-                onChange={handleReservationChange}
-                className="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Jan Kowalski"
-                required
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs text-slate-300 mb-1">
+                  Imię
+                </label>
+                <input
+                  type="text"
+                  name="firstName"
+                  value={reservationForm.firstName}
+                  onChange={handleReservationChange}
+                  className="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="Jan"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-slate-300 mb-1">
+                  Nazwisko
+                </label>
+                <input
+                  type="text"
+                  name="lastName"
+                  value={reservationForm.lastName}
+                  onChange={handleReservationChange}
+                  className="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="Kowalski"
+                  required
+                />
+              </div>
             </div>
 
             <div>
@@ -167,41 +185,11 @@ export default function AdminReservation({ onBack }) {
                 onChange={handleReservationChange}
                 className="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
-                <option>Standard</option>
-                <option>Deluxe</option>
-                <option>Suite</option>
-                <option>Rodzinny</option>
+                <option>CLASSIC</option>
+                <option>DELUXE</option>
+                <option>APARTAMENT PAŁACOWY</option>
+                <option>APARTAMENT DELUXE</option>
               </select>
-            </div>
-
-            <div>
-              <label className="block text-xs text-slate-300 mb-1">
-                Sposób płatności
-              </label>
-              <select
-                name="paymentMethod"
-                value={reservationForm.paymentMethod}
-                onChange={handleReservationChange}
-                className="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option>Karta płatnicza</option>
-                <option>Gotówka na miejscu</option>
-                <option>Przelew</option>
-                <option>BLIK</option>
-              </select>
-            </div>
-
-            <h2 className="text-lg font-semibold text-slate-100 mb-1">
-              Dodatki
-            </h2>
-
-            <div className="space-y-3">
-              <label className="flex items-center gap-3">
-                <input type="checkbox" name="breakfast" className="w-4 h-4" />
-                <span className="text-sm">
-                  Śniadanie (35 zł / osoba / dzień)
-                </span>
-              </label>
             </div>
 
             <div className="pt-2 flex justify-end gap-3">

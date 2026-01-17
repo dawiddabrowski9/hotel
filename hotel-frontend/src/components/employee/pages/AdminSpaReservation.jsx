@@ -4,7 +4,9 @@ import BackButton from "../components/BackButton";
 
 export default function AdminSpaReservation({ onBack }) {
   const [form, setForm] = useState({
-    clientName: "",
+    firstName: "",
+    lastName: "",
+    email: "",
     phone: "",
     date: "",
     time: "",
@@ -38,13 +40,38 @@ export default function AdminSpaReservation({ onBack }) {
         className="bg-slate-800/70 border border-slate-700 rounded-xl p-8 space-y-4"
       >
         <div>
-          <label className="block text-sm mb-1">Imię i nazwisko</label>
+          <label className="block text-sm mb-1">Imię</label>
           <input
             type="text"
-            name="clientName"
-            value={form.clientName}
+            name="firstName"
+            value={form.firstName}
             onChange={handleChange}
             className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm mb-1">Nazwisko</label>
+          <input
+            type="text"
+            name="lastName"
+            value={form.lastName}
+            onChange={handleChange}
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm mb-1">E-mail</label>
+          <input
+            type="email"
+            name="email"
+            value={form.email}
+            onChange={handleChange}
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2"
+            required
           />
         </div>
 
@@ -56,6 +83,7 @@ export default function AdminSpaReservation({ onBack }) {
             value={form.phone}
             onChange={handleChange}
             className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2"
+            required
           />
         </div>
 
@@ -67,6 +95,7 @@ export default function AdminSpaReservation({ onBack }) {
             value={form.date}
             onChange={handleChange}
             className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2"
+            required
           />
         </div>
 
@@ -78,6 +107,7 @@ export default function AdminSpaReservation({ onBack }) {
             value={form.time}
             onChange={handleChange}
             className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2"
+            required
           />
         </div>
 

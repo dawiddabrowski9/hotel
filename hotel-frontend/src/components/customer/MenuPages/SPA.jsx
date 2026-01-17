@@ -6,12 +6,12 @@ export default function SPA() {
   const [showForm, setShowForm] = useState(false);
   const [selectedService, setSelectedService] = useState(null);
   const [formData, setFormData] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     phone: "",
     date: "",
     time: "",
-    notes: "",
   });
 
   const services = [
@@ -219,16 +219,33 @@ export default function SPA() {
                       <SlideUp delay={0.3}>
                         <div>
                           <label className="block text-sm font-semibold mb-2">
-                            Imię i nazwisko *
+                            Imię
                           </label>
                           <input
                             type="text"
-                            name="name"
+                            name="firstName"
                             value={formData.name}
                             onChange={handleInputChange}
                             required
                             className="w-full bg-white border border-slate-300 px-4 py-3 focus:outline-none focus:border-[#C9A24D]"
-                            placeholder="Wpisz imię i nazwisko"
+                            placeholder="Wpisz imię"
+                          />
+                        </div>
+                      </SlideUp>
+
+                      <SlideUp delay={0.3}>
+                        <div>
+                          <label className="block text-sm font-semibold mb-2">
+                            Nazwisko
+                          </label>
+                          <input
+                            type="text"
+                            name="lastName"
+                            value={formData.name}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full bg-white border border-slate-300 px-4 py-3 focus:outline-none focus:border-[#C9A24D]"
+                            placeholder="Wpisz nazwisko"
                           />
                         </div>
                       </SlideUp>
@@ -305,22 +322,6 @@ export default function SPA() {
                           </div>
                         </SlideRight>
                       </div>
-
-                      <FadeIn delay={0.7}>
-                        <div>
-                          <label className="block text-sm font-semibold mb-2">
-                            Uwagi (opcjonalnie)
-                          </label>
-                          <textarea
-                            name="notes"
-                            value={formData.notes}
-                            onChange={handleInputChange}
-                            rows="3"
-                            className="w-full bg-white border border-slate-300 px-4 py-3 focus:outline-none focus:border-[#C9A24D]"
-                            placeholder="Np. preferencje dotyczące masażu, alergie, życzenia specjalne..."
-                          />
-                        </div>
-                      </FadeIn>
 
                       <SlideUp delay={0.3}>
                         <div className="flex gap-3 pt-4">

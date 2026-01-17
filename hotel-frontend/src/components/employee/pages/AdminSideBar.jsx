@@ -76,7 +76,7 @@ const AdminSidebar = ({ selected, setSelected }) => {
         <Option Icon={BiBed} title="Lista pokoi" selected={selected} setSelected={setSelected} open={open} />
         <Option Icon={FiUsers} title="Członkowie" selected={selected} setSelected={setSelected} open={open} />
         <Option Icon={MdOutlineEventNote} title="Lista rezerwacji" selected={selected} setSelected={setSelected} open={open} />
-        <Option Icon={MdRestaurantMenu} title="Lista posiłków" selected={selected} setSelected={setSelected} open={open} />
+        <Option Icon={MdRestaurantMenu} title="Rezerwacje SPA" selected={selected} setSelected={setSelected} open={open} />
 
       </div>
 

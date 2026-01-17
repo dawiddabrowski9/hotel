@@ -40,7 +40,6 @@ app.post('/login', async (req, res) => {
         } else { res.status(401).json({ message: "Błędny login lub hasło" }); }
     } catch (e) { res.status(500).json({ message: e.message }); }
 });
-zerwacja
 
 app.get('/currentuserinfo', async (req, res) => {
     const authHeader = req.headers.authorization;

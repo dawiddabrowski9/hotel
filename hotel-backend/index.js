@@ -40,7 +40,7 @@ app.post('/login', async (req, res) => {
         } else { res.status(401).json({ message: "Błędny login lub hasło" }); }
     } catch (e) { res.status(500).json({ message: e.message }); }
 });
-
+zerwacja
 
 app.get('/currentuserinfo', async (req, res) => {
     const authHeader = req.headers.authorization;
@@ -173,12 +173,8 @@ app.get('/cleaning/list', async (req, res)=>{
     res.json(data);
 });
 
-
-
-
 app.post('/breakfast/add', async(req,res)=>{
     const d = req.body;
-
     try{
         const resultBreakfast = await db.run(
             `INSERT INTO Sniadanie (data, id_pokoju, id_dania) VALUES (? ,? ,?)`,
@@ -191,48 +187,144 @@ app.post('/breakfast/add', async(req,res)=>{
     }
 });
 
-app.get(`b`)
+app.get('/book/list',  async(req,res)=>{
+    const bookData = await db.all(`
+        SELECT 
+            R.id_rezerwacja as id,
+            R.id_klient,
+            R.id_pokoj,
+            R.data_przyjazdu,
+            R.data_wyjazdu,
+            R.liczba_gosci,
+            K.imie,
+            K.nazwisko,
+            K.nr_tel, 
+            K.email, 
+            P.typ
+        FROM Rezerwacja AS R
+        JOIN Klient AS K ON R.id_klient = K.id_klient
+        JOIN Pokoj AS P ON R.id_pokoj = P.id_pokoj
+    `);
+    res.json(bookData);
+});
+
+app.put('/book/update/:id', async(req,res)=>{
+    const { id } = req.params;
+    const data = req.body;
+    try{
+        await db.run('BEGIN TRANSACTION');
+        await db.run(`
+            UPDATE Klient
+                SET imie = ?,
+                nazwisko = ?, 
+                nr_tel = ?, 
+                email = ?
+            WHERE id_klient = (SELECT id_klient FROM Rezerwacja WHERE id_rezerwacja = ?)
+        `, [data.imie, data.nazwisko, data.nr_tel, data.email, id]);
+        await db.run(`
+            UPDATE Rezerwacja
+            SET data_przyjazdu = ?, data_wyjazdu = ?, liczba_gosci = ?
+            WHERE id_rezerwacja = ? 
+        `,[data.data_przyjazdu,data.data_wyjazdu,data.liczba_gosci,id]);
+        await db.run(`
+            UPDATE Rezerwacja
+            SET id_pokoj = (SELECT id_pokoj FROM Pokoj WHERE typ = ?)
+            WHERE id_rezerwacja = ?
+        `, [data.typ_pokoju, id]);
+        await db.run('COMMIT');
+        res.json({success:true});
+    }catch(err){
+        await db.run('ROLLBACK');
+        res.status(500).json({error: err.message})
+    }
+
+
+});
+app.delete('/book/delete/:id', async(req,res)=>{
+    const { id } = req.params; 
+
+    try {
+        await db.run('BEGIN TRANSACTION');
+
+        const reservation = await db.get(
+            `SELECT id_pokoj,id_klient FROM Rezerwacja WHERE id_rezerwacja = ?`,
+            [id]
+        );
+
+        if (!reservation) {
+            await db.run('ROLLBACK');
+            return res.status(404).json({ message: "Nie znaleziono rezerwacji" });
+        }
+
+        await db.run(
+            `UPDATE Pokoj SET status = 'Wolny' WHERE id_pokoj = ?`,
+            [reservation.id_pokoj]
+        );
+        await db.run(`
+            DELETE FROM Klient WHERE id_klient = ?
+        `, [reservation.id_klient]);
+        await db.run(
+            `DELETE FROM Rezerwacja WHERE id_rezerwacja = ?`,
+            [id]
+        );
+
+        await db.run('COMMIT');
+        res.json({ message: "Rezerwacja usunięta, pokój jest teraz wolny." });
+
+    } catch (err) {
+        if (db) await db.run('ROLLBACK').catch(() => {});
+        console.error(err);
+        res.status(500).json({ error: "Błąd podczas usuwania: " + err.message });
+    }
+});
 
 app.post('/book', async (req, res) => {
     const d = req.body;
     try {
-        
+        await db.run('BEGIN TRANSACTION');
+
         const resultKlient = await db.run(
             `INSERT INTO Klient (imie, nazwisko, nr_tel, email) VALUES (?, ?, ?, ?)`,
-            [d.imie, d.nazwisko, d.nr_tel,d.email]
+            [d.imie, d.nazwisko, d.nr_tel, d.email]
         );
-
         const idKlienta = resultKlient.lastID;
-        const resultPokoj = await db.get(
+
+        
+
+        const room = await db.get(
             `SELECT id_pokoj FROM Pokoj WHERE typ = ? AND status = 'Wolny' LIMIT 1`,
             [d.typ_pokoju]
-           
         );
+
         
-        if (!resultPokoj) {
-            resultKlient = await db.run(
-                `DELETE FROM Klient WHERE id_klient = ?`,
-                [idKlienta]
-            );
+        if (!room) {
+            await db.run('ROLLBACK');
             return res.status(400).json({ message: "Brak dostępnych pokoi tego typu" });
-            
         }
+
+   
         await db.run(
             `INSERT INTO Rezerwacja 
             (id_klient, id_pokoj, data_przyjazdu, data_wyjazdu, liczba_gosci) 
             VALUES (?, ?, ?, ?, ?)`,
-            [idKlienta, resultPokoj.id_pokoj, d.data_przyjazdu, d.data_wyjazdu, d.liczba_gosci]
-            
+            [idKlienta, room.id_pokoj, d.data_przyjazdu, d.data_wyjazdu, d.liczba_gosci]
         );
+
+    
         await db.run(
             `UPDATE Pokoj SET status = 'Zajęty' WHERE id_pokoj = ?`,
-            [resultPokoj.id_pokoj]
+            [room.id_pokoj]
         );
+
+        await db.run('COMMIT');
         res.status(201).json({ message: "Zarezerwowano pomyślnie!" });
+
     } catch (err) {
-        console.error("Wystąpił błąd podczas rezerwacji"); 
+        if (db) await db.run('ROLLBACK').catch(() => {}); 
+        console.error("FULL ERROR:", err); 
         res.status(500).json({ message: "Błąd bazy danych: " + err.message });
     }
 });
+
 
 app.listen(port);

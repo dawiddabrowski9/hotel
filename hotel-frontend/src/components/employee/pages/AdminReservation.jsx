@@ -11,7 +11,7 @@ export default function AdminReservation({ onBack }) {
     arrivalDate: "",
     departureDate: "",
     people: 1,
-    roomType: "Standard",
+    roomType: "",
   });
 
   const handleReservationChange = (e) => {
@@ -22,10 +22,32 @@ export default function AdminReservation({ onBack }) {
     }));
   };
 
-  const handleReservationSubmit = (e) => {
+  const handleReservationSubmit = async (e) => {
     e.preventDefault();
-    console.log("FormularzRezerwacji:", reservationForm);
-    alert("Rezerwacja została zapisana.");
+    const data = { 
+      imie : reservationForm.firstName,
+      nazwisko : reservationForm.lastName,
+      email : reservationForm.email,
+      nr_tel : reservationForm.phone,
+      data_przyjazdu : reservationForm.arrivalDate,
+      data_wyjazdu : reservationForm.departureDate,
+      liczba_gosci : reservationForm.people,
+      typ_pokoju : reservationForm.roomType
+    }
+    try{
+      const respone = await fetch("http://localhost:3000/book",{
+        method:"POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+      const result = await respone.json();
+    }catch{
+      console.error('BŁĄD SERWERA!: ',error)
+      alert("Wystąpił nieoczekiwany błąd!")
+    }
+  
   };
 
   const handleClear = () => {
@@ -37,10 +59,10 @@ export default function AdminReservation({ onBack }) {
       arrivalDate: "",
       departureDate: "",
       people: 1,
-      roomType: "Standard",
+      roomType: "",
     });
   };
-
+  
   return (
     <div className="p-8 text-slate-100">
       <div className="flex items-center justify-between mb-6">
@@ -136,7 +158,7 @@ export default function AdminReservation({ onBack }) {
                   Data przyjazdu
                 </label>
                 <input
-                  type="date"
+                  type="date"StandardRoom found: undefined
                   name="arrivalDate"
                   value={reservationForm.arrivalDate}
                   onChange={handleReservationChange}
@@ -185,10 +207,10 @@ export default function AdminReservation({ onBack }) {
                 onChange={handleReservationChange}
                 className="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
-                <option>CLASSIC</option>
-                <option>DELUXE</option>
-                <option>APARTAMENT PAŁACOWY</option>
-                <option>APARTAMENT DELUXE</option>
+                <option value ="POKÓJ CLASSIC">POKÓJ CLASSIC</option>
+                <option value ="POKÓJ DELUXE">POKÓJ DELUXE</option>
+                <option value ="APARTAMENT PAŁACOWY">APARTAMENT PAŁACOWY</option>
+                <option value="APARTAMENT DELUXE">APARTAMENT DELUXE</option>
               </select>
             </div>
 

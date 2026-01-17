@@ -3,10 +3,10 @@ import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useTableSearchSort } from "../hook/useTableSearchSort";
 
-const API_BASE = "http://localhost:3000";
+
 
 // Fallback (gdyby backend nie zwrócił listy pokoi)
-const FALLBACK_ROOM_TYPES = ["Standard", "Classic", "Deluxe", "Apartament"];
+const FALLBACK_ROOM_TYPES = ["POKÓJ CLASSIC","POKÓJ DELUXE","APARTAMENT PAŁACOWY","APARTAMENT DELUXE"];
 
 const demoReservations = [
   {
@@ -52,62 +52,33 @@ const AdminReservationsList = () => {
     phone: "",
   });
 
-  // (Opcjonalnie) pobranie rezerwacji - kolega podepnie endpoint
+ 
   useEffect(() => {
     const fetchReservations = async () => {
       try {
-        const res = await fetch(`${API_BASE}/reservations/list`);
+        const res = await fetch(`http://localhost:3000/book/list`);
         if (!res.ok) return;
         const data = await res.json();
 
         const normalized = Array.isArray(data)
-          ? data.map((r) => ({
-              id: r.id ?? r.id_rezerwacja ?? r.reservationId ?? Math.random(),
-              firstName: r.firstName ?? r.imie ?? "",
-              lastName: r.lastName ?? r.nazwisko ?? "",
-              arrivalDate: r.arrivalDate ?? r.data_przyjazdu ?? "",
-              departureDate: r.departureDate ?? r.data_wyjazdu ?? "",
-              roomType: r.roomType ?? r.typ_pokoju ?? r.typ ?? "",
-              people: r.people ?? r.liczba_gosci ?? 1,
-              email: r.email ?? "",
-              phone: r.phone ?? r.nr_tel ?? "",
-            }))
-          : [];
+  ? data.map((r) => ({
+      id: r.id, 
+      firstName: r.imie || "",
+      lastName: r.nazwisko || "",
+      arrivalDate: r.data_przyjazdu || "",
+      departureDate: r.data_wyjazdu || "",
+      roomType: r.typ || "",
+      people: r.liczba_gosci || 1,
+      email: r.email || "",
+      phone: r.nr_tel || "",
+    }))
+  : [];
 
         if (normalized.length) setReservations(normalized);
       } catch (_) {}
     };
 
     fetchReservations();
-  }, []);
-
-  // ✅ pobranie typów pokoi z /rooms/list (u Ciebie endpoint istnieje)
-  useEffect(() => {
-    const fetchRoomTypes = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/rooms/list`);
-        if (!res.ok) return;
-
-        const rooms = await res.json();
-        const types = Array.isArray(rooms)
-          ? [...new Set(rooms.map((r) => r.type).filter(Boolean))]
-          : [];
-
-        if (types.length) {
-          setRoomTypes(types);
-
-          // jeśli aktualnie wybrany typ nie istnieje, ustaw pierwszy z listy
-          setForm((p) => ({
-            ...p,
-            roomType: types.includes(p.roomType) ? p.roomType : types[0],
-          }));
-        }
-      } catch (_) {
-        // fallback zostaje
-      }
-    };
-
-    fetchRoomTypes();
   }, []);
 
   const { search, setSearch, handleSort, data: sortedData, renderSortIcon } =
@@ -212,9 +183,8 @@ const AdminReservationsList = () => {
     setIsModalOpen(false);
     setSelected(null);
 
-    // backend update (opcjonalnie)
     try {
-      await fetch(`${API_BASE}/reservations/${selected.id}`, {
+      await fetch(`http://localhost:3000/book/update/${selected.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -231,17 +201,33 @@ const AdminReservationsList = () => {
     } catch (_) {}
   };
 
+ 
   const handleDelete = async () => {
-    if (!selected) return;
+  if (!selected) return;
 
-    setReservations((prev) => prev.filter((r) => r.id !== selected.id));
-    setIsModalOpen(false);
+
+  const backup = [...reservations];
+
+
+  setReservations((prev) => prev.filter((r) => r.id !== selected.id));
+  setIsModalOpen(false);
+
+  try {
+    const response = await fetch(`http://localhost:3000/book/delete/${selected.id}`, { 
+      method: "DELETE" 
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to delete");
+    }
+
     setSelected(null);
-
-    try {
-      await fetch(`${API_BASE}/reservations/${selected.id}`, { method: "DELETE" });
-    } catch (_) {}
-  };
+  } catch (error) {
+    console.error("Delete failed:", error);
+    setReservations(backup); 
+    alert("Nie udało się usunąć rezerwacji z bazy danych.");
+  }
+};
 
   return (
     <section>

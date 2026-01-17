@@ -63,7 +63,7 @@ export default function AdminMeals() {
     status: "W trakcie",
   });
 
-  // auto-przełączanie statusu co 30s
+
   useEffect(() => {
     const tick = () => {
       setMeals((prev) =>

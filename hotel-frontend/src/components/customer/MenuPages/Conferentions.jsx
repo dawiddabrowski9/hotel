@@ -6,7 +6,8 @@ export default function Conferention() {
   const [showForm, setShowForm] = useState(false);
   const [selectedConferenceRoom, setSelectedConferenceRoom] = useState(null);
   const [formData, setFormData] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     phone: "",
     company: "",
@@ -17,7 +18,6 @@ export default function Conferention() {
     roomType: "Sala biznesowa",
     equipment: [],
     catering: "none",
-    notes: "",
   });
 
   const conferenceRooms = [
@@ -155,7 +155,8 @@ export default function Conferention() {
     setShowForm(false);
     setSelectedConferenceRoom(null);
     setFormData({
-      name: "",
+      firstName: "",
+      lastName: "",
       email: "",
       phone: "",
       company: "",
@@ -165,7 +166,7 @@ export default function Conferention() {
       participants: 10,
       roomType: "Sala biznesowa",
       equipment: [],
-      notes: "",
+      catering: "none",
     });
   };
 
@@ -277,19 +278,38 @@ export default function Conferention() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                           <div>
                             <label className="block text-sm font-semibold mb-2">
-                              Imię i nazwisko *
+                              Imię *
                             </label>
                             <input
                               type="text"
-                              name="name"
-                              value={formData.name}
+                              name="firstName"
+                              value={formData.firstName}
                               onChange={handleInputChange}
                               required
                               className="w-full bg-white border border-slate-300 px-4 py-3 focus:outline-none focus:border-[#C9A24D]"
-                              placeholder="Wpisz imię i nazwisko"
+                              placeholder="Wpisz imię"
                             />
                           </div>
 
+                          <div>
+                            <label className="block text-sm font-semibold mb-2">
+                              Nazwisko *
+                            </label>
+                            <input
+                              type="text"
+                              name="lastName"
+                              value={formData.lastName}
+                              onChange={handleInputChange}
+                              required
+                              className="w-full bg-white border border-slate-300 px-4 py-3 focus:outline-none focus:border-[#C9A24D]"
+                              placeholder="Wpisz nazwisko"
+                            />
+                          </div>
+                        </div>
+                      </SlideUp>
+
+                      <SlideUp delay={0.18}>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                           <div>
                             <label className="block text-sm font-semibold mb-2">
                               Firma (opcjonalnie)
@@ -477,23 +497,6 @@ export default function Conferention() {
                         </div>
                       </SlideUp>
 
-                      {/* Notatki */}
-                      <SlideUp delay={0.4}>
-                        <div>
-                          <label className="block text-sm font-semibold mb-2">
-                            Dodatkowe uwagi (opcjonalnie)
-                          </label>
-                          <textarea
-                            name="notes"
-                            value={formData.notes}
-                            onChange={handleInputChange}
-                            rows="3"
-                            className="w-full bg-white border border-slate-300 px-4 py-3 focus:outline-none focus:border-[#C9A24D]"
-                            placeholder="Np. specjalne życzenia, plan wydarzenia..."
-                          />
-                        </div>
-                      </SlideUp>
-
                       {/* Podsumowanie kosztów */}
                       <FadeIn delay={0.2}>
                         <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
@@ -557,7 +560,11 @@ export default function Conferention() {
             const CardAnim = isEven ? SlideLeft : SlideRight;
 
             return (
-              <SlideUp key={room.id} delay={0.15 + index * 0.12} className="w-full">
+              <SlideUp
+                key={room.id}
+                delay={0.15 + index * 0.12}
+                className="w-full"
+              >
                 <div className="bg-white border border-slate-200 shadow-sm overflow-hidden">
                   <div className="flex flex-col lg:flex-row">
                     {/* Zdjęcie */}

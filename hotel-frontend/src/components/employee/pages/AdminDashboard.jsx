@@ -1,4 +1,5 @@
 
+import { time } from "framer-motion";
 import React,{useState,useEffect}from "react";
 
 
@@ -102,24 +103,21 @@ const AdminDashboard = ({ setSelected }) => {
         {/* Kafelek 4 */}
         <div className="bg-slate-800 rounded-xl p-16 shadow-lg border border-slate-700">
           <p className="text-l text-slate-400">Dzisiejsze check-iny</p>
-          <p className="mt-2 text-4xl font-bold text-amber-400">{reservationSummary.total_guests}</p>
-          <p className="mt-1 text-xs text-slate-400">Ostatnia synchronizacja: {formattedDate}       {currentTime}</p>
+          <p className="mt-2 text-4xl font-bold text-amber-400">{reservationSummary.total_guests ?? 0}</p>
+          
         </div>
       </div>
 
       {/* Dalsza część dashboardu – np. tabelki / wykresy */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-12">
         <div className="xl:col-span-2 bg-slate-800 rounded-xl p-16 border border-slate-700">
-          <h2 className="text-2xl font-semibold mb-2">Dzisiejsze operacje</h2>
-          <p className="text-l text-slate-400">
-            Tu możesz później dodać listę dzisiejszych przyjazdów i wyjazdów.
-          </p>
+         
         </div>
         <div className="bg-slate-800 rounded-xl p-16 border border-slate-700">
-          <h2 className="text-2xl font-semibold mb-2">Alerty</h2>
+          <h2 className="text-2xl font-semibold mb-2">Ostatnia synchronizacja</h2>
           <ul className="text-l text-slate-300 list-disc list-inside space-y-1">
-            <li>2 pokoje oznaczone jako "do sprzątania"</li>
-            <li>1 pokój zgłoszony jako "usterka"</li>
+            <p>{formattedDate}</p>
+            <p>{currentTime}</p>
           </ul>
         </div>
       </div>

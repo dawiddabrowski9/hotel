@@ -28,8 +28,7 @@ const AdminRooms = () => {
 
   const [error, setError] = useState("");
 
-  // ✅ form dopasowany do tego co backend zwraca / przyjmuje
-  // rooms/list zwraca: { id, type, name (pietro), status, capacity (lozka) }
+  
   const [form, setForm] = useState({
     type: "",
     capacity: "",
@@ -66,7 +65,7 @@ const AdminRooms = () => {
   const openEditModal = (room) => {
     setMode("edit");
     setSelectedRoom(room);
-    setSelectedRoomId(room.id); // ✅ podświetlenie
+    setSelectedRoomId(room.id);
     setError("");
     setForm({
       type: room.type ?? "",
@@ -80,9 +79,7 @@ const AdminRooms = () => {
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedRoom(null);
-    setError("");
-    // jeśli chcesz żeby znikało podświetlenie po zamknięciu:
-    // setSelectedRoomId(null);
+    setError("")
   };
 
   const handleChange = (key) => (e) => {
@@ -112,7 +109,6 @@ const AdminRooms = () => {
     return true;
   };
 
-  // ✅ add / edit w zależności od trybu
   const handleSave = async () => {
     setError("");
     if (!validate()) return;
@@ -120,7 +116,6 @@ const AdminRooms = () => {
     const capNum = parseInt(form.capacity, 10);
     const floorNum = parseInt(form.name, 10);
 
-    // ADD
     if (mode === "add") {
       try {
         const response = await fetch("http://localhost:3000/rooms/add", {
@@ -140,8 +135,6 @@ const AdminRooms = () => {
           throw new Error(result?.message || "Błąd serwera");
         }
 
-        // backend nie zwraca id pokoju w Twoim kodzie,
-        // więc robimy fallback: nextId w frontendzie
         const nextId = rooms.length
           ? Math.max(...rooms.map((r) => Number(r.id) || 0)) + 1
           : 1;
@@ -164,24 +157,44 @@ const AdminRooms = () => {
       return;
     }
 
-    // EDIT (frontend-only, kolega podepnie endpoint)
+ 
     if (!selectedRoom) return;
+  if (mode === "edit") {
+  if (!selectedRoom) return;
 
-    const updatedRoom = {
-      ...selectedRoom,
-      type: form.type,
-      capacity: capNum,
-      name: floorNum,
-      status: form.status,
-    };
+  const updatedRoom = {
+    ...selectedRoom,
+    type: form.type,
+    capacity: capNum,
+    name: floorNum,
+    status: form.status,
+  };
+
+  try {
+    const response = await fetch(`http://localhost:3000/rooms/update/${selectedRoom.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        typ: form.type,           
+        ilosc_lozek: capNum,   
+        pietro: floorNum,       
+        status: form.status
+      }),
+    });
+
+    if (!response.ok) throw new Error("Nie udało się zaktualizować pokoju na serwerze");
 
     setRooms((prev) => prev.map((r) => (r.id === selectedRoom.id ? updatedRoom : r)));
     setSelectedRoomId(selectedRoom.id);
     setIsModalOpen(false);
     setSelectedRoom(null);
-
-    // backend (opcjonalnie, kolega podepnie):
-    // await fetch(`http://localhost:3000/rooms/${selectedRoom.id}`, { method:"PUT", ... })
+  } catch (err) {
+    console.error("Błąd edycji:", err);
+    setError(err.message);
+  }
+  return;
+}
+    
   };
 
   const handleDelete = async () => {
@@ -191,9 +204,21 @@ const AdminRooms = () => {
     setSelectedRoomId((prev) => (prev === selectedRoom.id ? null : prev));
     setIsModalOpen(false);
     setSelectedRoom(null);
+    const previousRooms = [...rooms];
+    try {
+    const response = await fetch(`http://localhost:3000/rooms/delete/${selectedRoom.id}`, { 
+      method: "DELETE" 
+    });
 
-    // backend (opcjonalnie):
-    // await fetch(`http://localhost:3000/rooms/${selectedRoom.id}`, { method:"DELETE" })
+    if (!response.ok) throw new Error("Błąd serwera");
+    
+    setSelectedRoom(null);
+    setSelectedRoomId(null);
+  } catch (error) {
+    console.error("Usuwanie nieudane:", error);
+    setRooms(previousRooms); 
+    alert("Nie udało się usunąć pokoju z bazy danych.");
+  }
   };
 
   const fetchedRooms = async () => {

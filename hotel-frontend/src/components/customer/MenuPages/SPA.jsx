@@ -11,7 +11,7 @@ export default function SPA() {
     email: "",
     phone: "",
     date: "",
-    time: "",
+    time: "10:00",
   });
 
   const services = [
@@ -102,34 +102,63 @@ export default function SPA() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    try {
+        if (!selectedService || !selectedService.price) {
+            console.error("Błąd!");
+            return;
+        }
 
-    console.log("Rezerwacja SPA:", {
-      ...formData,
-      service: selectedService.title,
-      price: selectedService.price,
-    });
+        const priceParts = selectedService.price.split(' ');
+        const PriceStrip = parseInt(priceParts[0]);
+        console.log("Calculated Price:", PriceStrip);
 
-    alert(
-      `Dziękujemy za rezerwację ${selectedService.title}!\nPotwierdzenie zostanie wysłane na adres: ${formData.email}`
-    );
+        const data = {
+            imie: formData.firstName,
+            nazwisko: formData.lastName,
+            email: formData.email,
+            nr_tel: formData.phone,
+            data: formData.date,
+            godzina: formData.time,
+            typ: selectedService.title,
+            cena: PriceStrip
+        };
+        console.log("Payload to send:", data);
 
-    setShowForm(false);
-    setSelectedService(null);
-    setFormData({
-      name: "",
-      email: "",
-      phone: "",
-      date: "",
-      time: "",
-      notes: "",
-    });
-  };
+        const response = await fetch("http://localhost:3000/spa/book", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        
+        if (response.ok) {
+            alert(`Sukces! Rezerwacja na ${selectedService.title} zapisana.`);
+            handleCloseForm();
+        } else {
+          console.log("Błąd serwera: " + result.message);
+        }
+
+    } catch (err) {
+
+        alert("Wystąpił błąd podczas wysyłania: " + err.message);
+    }
+};
 
   const handleCloseForm = () => {
     setShowForm(false);
     setSelectedService(null);
+    setFormData({
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      date: "",
+      time: "",
+    });
   };
 
    return (

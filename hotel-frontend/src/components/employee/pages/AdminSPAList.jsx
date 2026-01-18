@@ -5,12 +5,12 @@ import { useTableSearchSort } from "../hook/useTableSearchSort";
 
 // tylko te usługi
 const serviceOptions = [
-  "Masaż klasyczny całościowy",
-  "Masaż relaksacyjny",
-  "Masaż baskijski",
-  "Masaż ciepłą czekoladą",
-  "Kobido",
-  "Body peeling",
+  "MASAŻ KLASYCZNY CAŁOŚCIOWY",
+  "MASAŻ RELAKSACYJNY",
+  "MASAŻ BASKIJSKI",
+  "MASAŻ CIEPŁĄ CZEKOLADĄ",
+  "KOBIDO",
+  "BODY PEELING",
 ];
 
 // pomocnicze: sprawdza czy data+godzina minęły
@@ -29,7 +29,6 @@ const statusBadgeClass = (status) => {
   // Oczekuje
   return "bg-sky-500/15 text-sky-300 border border-sky-500/20";
 };
-
 // dane demo (frontend)
 const demoReservations = [
   {
@@ -42,23 +41,12 @@ const demoReservations = [
     time: "10:30",
     service: "Masaż klasyczny całościowy",
     status: "Oczekuje",
-  },
-  {
-    id: 2,
-    firstName: "Anna",
-    lastName: "Nowak",
-    email: "anna.nowak@mail.com",
-    phone: "500400300",
-    date: "2026-01-18",
-    time: "12:00",
-    service: "Kobido",
-    status: "W trakcie",
-  },
+  }
 ];
 
 export default function AdminSpaReservations() {
-  const [reservations, setReservations] = useState(demoReservations);
-
+  const [reservations, setReservations] = useState([]);
+  const [isLoading, setIsLoading]  = useState(true);
   const [filterStatus, setFilterStatus] = useState("Wszystkie"); // Wszystkie | Oczekuje | W trakcie | Zrealizowane
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState(null);
@@ -76,7 +64,7 @@ export default function AdminSpaReservations() {
     status: "Oczekuje",
   });
 
-  // auto status -> Zrealizowane po czasie
+  //AUTO STATUS 
   useEffect(() => {
     const tick = () => {
       setReservations((prev) =>
@@ -144,12 +132,44 @@ export default function AdminSpaReservations() {
       date: reservation.date || "",
       time: reservation.time || "",
       service: safeService,
-      status: autoStatus || "Oczekuje",
+      status: autoStatus || "Oczekuje"
     });
 
     setIsModalOpen(true);
   };
+const fetchReservations = async () => {
+  try {
+    setIsLoading(true);
+    const res = await fetch("http://localhost:3000/spa/list");
+    
+    // Jeśli status nie jest 200-299, rzuć błąd
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Błąd serwera");
+    }
 
+    const data = await res.json();
+
+    // Dodatkowe sprawdzenie, czy data to na pewno tablica
+    if (Array.isArray(data)) {
+      const mapped = data.map(r => ({
+        ...r,
+        status: isPast(r.date, r.time) ? "Zrealizowane" : (r.status || "Oczekuje")
+      }));
+      setReservations(mapped);
+    } else {
+      console.error("Otrzymano dane w złym formacie:", data);
+      setReservations([]);
+    }
+
+  } catch (err) {
+    console.error("Błąd pobierania:", err.message);
+    setError("Problem z połączeniem: " + err.message);
+  } finally {
+    setIsLoading(false);
+  }
+};
+useEffect(()=>{fetchReservations();},[]);
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedReservation(null);
@@ -181,44 +201,59 @@ export default function AdminSpaReservations() {
       setError("Wybierz usługę z listy.");
       return false;
     }
-    if (!["Oczekuje", "W trakcie", "Zrealizowane"].includes(form.status)) {
-      setError("Wybierz poprawny status.");
-      return false;
-    }
+   
     return true;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!selectedReservation) return;
     if (!validate()) return;
 
-    const forcedStatus = isPast(form.date, form.time)
-      ? "Zrealizowane"
-      : form.status;
+    const forcedStatus = isPast(form.date, form.time) ? "Zrealizowane" : form.status;
+    const updatedData = { ...form, status: forcedStatus };
 
-    const updated = {
-      ...selectedReservation,
-      ...form,
-      status: forcedStatus,
-    };
+    const backup = [...reservations];
 
-    setReservations((prev) =>
-      prev.map((r) => (r.id === selectedReservation.id ? updated : r))
-    );
-
+    setReservations(prev => prev.map(r => 
+      r.id === selectedReservation.id ? { ...r, ...updatedData } : r
+    ));
     setIsModalOpen(false);
-    setSelectedReservation(null);
+
+    try {
+      const res = await fetch(`http://localhost:3000/spa/update/${selectedReservation.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedData)
+      });
+
+      if (!res.ok) throw new Error("Serwer odrzucił aktualizację");
+    } catch (err) {
+      console.error(err);
+      setReservations(backup);
+      alert("Nie udało się zapisać zmian na serwerze.");
+    }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!selectedReservation) return;
+    if (!window.confirm("Czy na pewno chcesz usunąć tę rezerwację?")) return;
 
-    setReservations((prev) =>
-      prev.filter((r) => r.id !== selectedReservation.id)
-    );
-    setSelectedReservationId(null);
+    const backup = [...reservations];
+
+    setReservations(prev => prev.filter(r => r.id !== selectedReservation.id));
     setIsModalOpen(false);
-    setSelectedReservation(null);
+
+    try {
+      const res = await fetch(`http://localhost:3000/spa/delete/${selectedReservation.id}`, {
+        method: "DELETE"
+      });
+
+      if (!res.ok) throw new Error("Błąd podczas usuwania");
+    } catch (err) {
+      console.error(err);
+      setReservations(backup); // Przywróć dane
+      alert("Nie udało się usunąć rezerwacji.");
+    }
   };
 
   return (
@@ -414,7 +449,7 @@ export default function AdminSpaReservations() {
               />
             </div>
 
-            {/* TYLKO SELECT - brak ręcznego wpisywania */}
+        
             <select
               value={form.service}
               onChange={(e) =>
@@ -427,18 +462,6 @@ export default function AdminSpaReservations() {
                   {s}
                 </option>
               ))}
-            </select>
-
-            <select
-              value={form.status}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, status: e.target.value }))
-              }
-              className="w-full p-3 mt-3 rounded bg-slate-700 text-white"
-            >
-              <option>Oczekuje</option>
-              <option>W trakcie</option>
-              <option>Zrealizowane</option>
             </select>
 
             <div className="flex justify-end gap-3 mt-4">

@@ -18,7 +18,7 @@ export default function AdminRoomCleaning() {
   const [mode, setMode] = useState("add"); // add | edit
   const [selectedRoom, setSelectedRoom] = useState(null);
 
-  // ✅ do podświetlenia wiersza
+
   const [selectedRoomId, setSelectedRoomId] = useState(null);
 
   const [form, setForm] = useState({
@@ -58,7 +58,7 @@ export default function AdminRoomCleaning() {
   const openEditModal = (room) => {
     setMode("edit");
     setSelectedRoom(room);
-    setSelectedRoomId(room.id); // ✅ ustaw podświetlenie
+    setSelectedRoomId(room.id);
     setError("");
     setForm({
       id: room.id,
@@ -72,8 +72,7 @@ export default function AdminRoomCleaning() {
     setIsModalOpen(false);
     setSelectedRoom(null);
     setError("");
-    // jeśli chcesz usuwać podświetlenie po zamknięciu, odkomentuj:
-    // setSelectedRoomId(null);
+   
   };
 
   const handleChange = (key) => (e) => {
@@ -94,58 +93,80 @@ export default function AdminRoomCleaning() {
 
   const handleSave = async () => {
     setError("");
-
-    if (mode === "add") {
-      const idNum = Number(form.id);
-
-      if (!Number.isInteger(idNum) || idNum <= 0) {
-        setError("Podaj poprawny numer pokoju (liczba całkowita > 0).");
-        return;
-      }
-
-      if (!validateCommon()) return;
-
-      if (rooms.some((r) => Number(r.id) === idNum)) {
-        setError(`Pokój o numerze ${idNum} już istnieje na liście.`);
-        return;
-      }
-
-      const newRow = {
-        id: idNum,
-        people: form.people.trim(),
-        status: form.status,
-      };
-
-      setRooms((prev) => [...prev, newRow]);
-      setSelectedRoomId(idNum); // ✅ po dodaniu też zaznacz
-      setIsModalOpen(false);
-      return;
-    }
-
-    if (!selectedRoom) return;
     if (!validateCommon()) return;
 
-    const updated = {
-      ...selectedRoom,
-      people: form.people.trim(),
-      status: form.status,
-    };
+    const idNum = Number(form.id);
 
-    setRooms((prev) => prev.map((r) => (r.id === selectedRoom.id ? updated : r)));
-    setSelectedRoomId(selectedRoom.id); // ✅ dalej zaznaczony
-    setIsModalOpen(false);
-    setSelectedRoom(null);
+    if (mode === "add") {
+      // Walidacja ID
+      if (!Number.isInteger(idNum) || idNum <= 0) {
+        setError("Podaj poprawny numer pokoju.");
+        return;
+      }
+      if (rooms.some((r) => Number(r.id) === idNum)) {
+        setError(`Pokój ${idNum} jest już na liście.`);
+        return;
+      }
+
+      try {
+        const response = await fetch("http://localhost:3000/cleaning/add", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id_pokoj: idNum,
+            id_pracownik: form.people,
+            status: form.status,
+          }),
+        });
+
+        if (!response.ok) throw new Error("Błąd serwera przy dodawaniu.");
+
+        setRooms((prev) => [...prev, { id: idNum, people: form.people, status: form.status }]);
+        setSelectedRoomId(idNum);
+        setIsModalOpen(false);
+      } catch (err) {
+        setError(err.message);
+      }
+    } else {
+      
+      try {
+        const response = await fetch(`http://localhost:3000/cleaning/update/${idNum}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id_pracownik: form.people,
+            status: form.status,
+          }),
+        });
+
+        if (!response.ok) throw new Error("Błąd serwera przy aktualizacji.");
+
+        setRooms((prev) =>
+          prev.map((r) => (r.id === idNum ? { ...r, people: form.people, status: form.status } : r))
+        );
+        setIsModalOpen(false);
+      } catch (err) {
+        setError(err.message);
+      }
+    }
   };
 
   const handleDelete = async () => {
     if (!selectedRoom) return;
 
-    setRooms((prev) => prev.filter((r) => r.id !== selectedRoom.id));
-    // ✅ jeśli usuwasz zaznaczony, wyczyść zaznaczenie
-    setSelectedRoomId((prev) => (prev === selectedRoom.id ? null : prev));
+    try {
+      const response = await fetch(`http://localhost:3000/cleaning/delete/${selectedRoom.id}`, {
+        method: "DELETE",
+      });
 
-    setIsModalOpen(false);
-    setSelectedRoom(null);
+      if (!response.ok) throw new Error("Nie udało się usunąć wpisu.");
+
+      setRooms((prev) => prev.filter((r) => r.id !== selectedRoom.id));
+      setSelectedRoomId(null);
+      setIsModalOpen(false);
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   const fetchedCleaning = async () => {

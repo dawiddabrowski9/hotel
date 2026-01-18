@@ -2,6 +2,16 @@
 import React, { useState } from "react";
 import BackButton from "../components/BackButton";
 
+
+const SERVICE_DETAILS = {
+  "MASAŻ KLASYCZNY CAŁOŚCIOWY": 250,
+  "MASAŻ RELAKSACYJNY": 199,
+  "MASAŻ BASKIJSKI": 320,
+  "MASAŻ CIEPŁĄ CZEKOLADĄ": 280,
+  "KOBIDO": 280,
+  "BODY PEELING": 170,
+};
+
 export default function AdminSpaReservation({ onBack }) {
   const [form, setForm] = useState({
     firstName: "",
@@ -10,7 +20,7 @@ export default function AdminSpaReservation({ onBack }) {
     phone: "",
     date: "",
     time: "",
-    service: "Masaż klasyczny 60 min",
+    service: "MASAŻ KLASYCZNY CAŁOŚCIOWY",
   });
 
   const handleChange = (e) => {
@@ -18,11 +28,44 @@ export default function AdminSpaReservation({ onBack }) {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Rezerwacja SPA:", form);
-    alert("Zapisano rezerwację SPA!");
-  };
+    
+    try {
+       
+        const selectedPrice= SERVICE_DETAILS[form.service];
+
+        const data = {
+            imie: form.firstName,
+            nazwisko: form.lastName,
+            email: form.email,
+            nr_tel: form.phone,
+            data: form.date,
+            godzina: form.time,
+            typ: form.service,
+            cena: selectedPrice
+        };
+       
+        const response = await fetch("http://localhost:3000/spa/book", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        
+        if (response.ok) {
+            alert(`Sukces! Rezerwacja na ${form.service} zapisana.`);
+            
+        } else {
+          console.log("Błąd serwera: " + result.message);
+        }
+
+    } catch (err) {
+
+        alert("Wystąpił błąd podczas wysyłania: " + err.message);
+    }
+};
 
   return (
     <div className="p-8 text-slate-100">
@@ -119,12 +162,11 @@ export default function AdminSpaReservation({ onBack }) {
             onChange={handleChange}
             className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2"
           >
-            <option>Masaż klasyczny całościowy</option>
-            <option>Masaż relaksacyjny</option>
-            <option>Masaż balijski</option>
-            <option>Masaż ciepłą czekoladą</option>
-            <option>Kobido</option>
-            <option>Body peeling</option>
+            {Object.keys(SERVICE_DETAILS).map((serviceName) => (
+                <option key={serviceName} value={serviceName}>
+                    {serviceName} - {SERVICE_DETAILS[serviceName]} PLN
+                </option>
+            ))}
           </select>
         </div>
 

@@ -11,7 +11,7 @@ export default function AdminReservation({ onBack }) {
     arrivalDate: "",
     departureDate: "",
     people: 1,
-    roomType: "",
+    roomType: "POKÓJ CLASSIC",
   });
 
   const handleReservationChange = (e) => {
@@ -24,6 +24,10 @@ export default function AdminReservation({ onBack }) {
 
   const handleReservationSubmit = async (e) => {
     e.preventDefault();
+
+    if(reservationForm.arrivalDate >= reservationForm.departureDate){
+      setError("Data wyjazdu nie może być późniejsza niż data przyjazdu!");
+    }
     const data = { 
       imie : reservationForm.firstName,
       nazwisko : reservationForm.lastName,
@@ -35,7 +39,7 @@ export default function AdminReservation({ onBack }) {
       typ_pokoju : reservationForm.roomType
     }
     try{
-      const respone = await fetch("http://localhost:3000/book",{
+      const response = await fetch("http://localhost:3000/book",{
         method:"POST",
         headers: {
           "Content-Type": "application/json",
@@ -43,7 +47,11 @@ export default function AdminReservation({ onBack }) {
         body: JSON.stringify(data),
       });
       const result = await respone.json();
-    }catch{
+      if(response.ok){
+        alert('Dodano rezerwację')
+        handleClear();
+      }
+    }catch(error){
       console.error('BŁĄD SERWERA!: ',error)
       alert("Wystąpił nieoczekiwany błąd!")
     }
@@ -59,7 +67,7 @@ export default function AdminReservation({ onBack }) {
       arrivalDate: "",
       departureDate: "",
       people: 1,
-      roomType: "",
+      roomType: "POKÓJ CLASSIC",
     });
   };
   
@@ -158,7 +166,7 @@ export default function AdminReservation({ onBack }) {
                   Data przyjazdu
                 </label>
                 <input
-                  type="date"StandardRoom found: undefined
+                  type="date"
                   name="arrivalDate"
                   value={reservationForm.arrivalDate}
                   onChange={handleReservationChange}

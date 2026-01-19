@@ -14,11 +14,7 @@ const path = require('path');
 
 
 
-app.use(express.static(path.join(__dirname, '../hotel-frontend/dist')));
 
-app.get('/:path*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../hotel-frontend/dist', 'index.html'));
-});
 const port = 3000
 const SECRET_KEY = ('process.secrets.env.SECRET_KEY')
 

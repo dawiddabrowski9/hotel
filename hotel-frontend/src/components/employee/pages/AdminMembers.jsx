@@ -138,7 +138,7 @@ const AdminMembers = () => {
         return false;
       }
     } else {
-      // edit: hasło opcjonalne, ale jeśli wpisane to >= 8
+
       if (password.length > 0 && password.length < 8) {
         setError("Jeśli zmieniasz hasło, musi mieć minimum 8 znaków.");
         return false;
@@ -147,14 +147,14 @@ const AdminMembers = () => {
     return true;
   };
 
-  // --- Submit (działa na state; backend kolega podepnie) ---
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     if (!validate()) return;
 
     if (mode === "add") {
-      // FRONT: dodaj do state
+
       const nextId = members.length
         ? Math.max(...members.map((m) => Number(m.id) || 0)) + 1
         : 1;
@@ -170,8 +170,6 @@ const AdminMembers = () => {
       setMembers((prev) => [...prev, newMember]);
       setIsModalOpen(false);
 
-      // BACKEND (opcjonalnie): rejestracja
-      // kolega może to zostawić jak jest albo podmienić
       try {
         await fetch(`${API_BASE}/register`, {
           method: "POST",
@@ -200,15 +198,14 @@ const AdminMembers = () => {
       role: form.role,
     };
 
-    // FRONT: update w state
+
     setMembers((prev) => prev.map((m) => (m.id === selectedMember.id ? updatedMember : m)));
     setIsModalOpen(false);
     setSelectedMember(null);
 
-    // BACKEND (opcjonalnie): update
-    // kolega podepnie endpoint /users/:id
+
     try {
-      await fetch(`${API_BASE}/users/${selectedMember.id}`, {
+      await fetch(`${API_BASE}/users/update/${selectedMember.id}`, {
         method: "PUT", // albo PATCH
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -225,14 +222,13 @@ const AdminMembers = () => {
   const handleDelete = async () => {
     if (!selectedMember) return;
 
-    // FRONT: delete w state
+
     setMembers((prev) => prev.filter((m) => m.id !== selectedMember.id));
     setIsModalOpen(false);
     setSelectedMember(null);
 
-    // BACKEND (opcjonalnie): delete
     try {
-      await fetch(`${API_BASE}/users/${selectedMember.id}`, {
+      await fetch(`${API_BASE}/users/delete/${selectedMember.id}`, {
         method: "DELETE",
       });
     } catch (_) {}

@@ -71,6 +71,48 @@ app.get('/currentuserinfo', async (req, res) => {
     }
 });
 
+app.put('/users/update/:id', async (req, res) => {
+    const { id } = req.params;
+    const { imie, nazwisko, stanowisko, login, password } = req.body;
+
+    try {
+        if (password && password.length >= 8) {
+
+            const hashed = await bcrypt.hash(password, 10);
+            await db.run(`
+                UPDATE Pracownik 
+                SET imie = ?, nazwisko = ?, stanowisko = ?, login = ?, password = ? 
+                WHERE id_pracownik = ?`, 
+                [imie, nazwisko, stanowisko, login, hashed, id]
+            );
+        } else {
+    
+            await db.run(`
+                UPDATE Pracownik 
+                SET imie = ?, nazwisko = ?, stanowisko = ?, login = ? 
+                WHERE id_pracownik = ?`, 
+                [imie, nazwisko, stanowisko, login, id]
+            );
+        }
+        res.json({ message: "Dane pracownika zaktualizowane" });
+    } catch (e) {
+        res.status(500).json({ error: "Błąd podczas aktualizacji: " + e.message });
+    }
+});
+
+app.delete('/users/delete/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await db.run('DELETE FROM Pracownik WHERE id_pracownik = ?', [id]);
+        if (result.changes === 0) {
+            return res.status(404).json({ message: "Nie znaleziono pracownika" });
+        }
+        res.json({ message: "Pracownik został usunięty" });
+    } catch (e) {
+        res.status(500).json({ error: "Błąd podczas usuwania: " + e.message });
+    }
+});
+
 app.get('/reservations/guestcount', async (req, res) => {
     const data = await db.get(`
         SELECT 

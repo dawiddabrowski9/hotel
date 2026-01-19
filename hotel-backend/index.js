@@ -16,7 +16,7 @@ const path = require('path');
 
 app.use(express.static(path.join(__dirname, '../hotel-frontend/dist')));
 
-app.get('/*', (req, res) => {
+app.get('/:path*', (req, res) => {
   res.sendFile(path.join(__dirname, '../hotel-frontend/dist', 'index.html'));
 });
 const port = 3000

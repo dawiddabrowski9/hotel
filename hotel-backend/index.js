@@ -9,6 +9,11 @@ require('dotenv').config({ path: 'secrets.env' });
 const app = express();
 app.use(cors());
 app.use(express.json());
+const path = require('path');
+
+
+
+
 
 const port = 3000
 const SECRET_KEY = ('process.secrets.env.SECRET_KEY')

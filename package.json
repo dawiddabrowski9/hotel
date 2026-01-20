@@ -2,19 +2,14 @@
   "name": "hotel-project",
   "version": "1.0.0",
   "scripts": {
-<<<<<<< HEADr
+
   "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
   "backend": "cd hotel-backend && node index.js",
   "frontend": "cd hotel-frontend && npm run dev",
   "start": "node index.js",
   "build": "npm install && cd hotel-frontend && npm install && npm run build"
-=======
-    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
-    "backend": "cd hotel-backend && node index.js",
-    "frontend": "cd hotel-frontend && npm run dev",
-    "start": "node index.js",
-    "build": "npm install"
->>>>>>> 570a94c71707e96ff509750a188c7139586a96f6
+
+
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

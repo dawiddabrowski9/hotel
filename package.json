@@ -2,11 +2,11 @@
   "name": "hotel-project",
   "version": "1.0.0",
   "scripts": {
-    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
-    "backend": "cd hotel-backend && node index.js",
-    "frontend": "cd hotel-frontend && npm run dev",
-    "start": "node index.js",
-    "build": "yarn"
+  "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+  "backend": "cd hotel-backend && node index.js",
+  "frontend": "cd hotel-frontend && npm run dev",
+  "start": "node index.js",
+  "build": "npm install && cd hotel-frontend && npm install && npm run build"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

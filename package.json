@@ -6,7 +6,7 @@
     "backend": "cd hotel-backend && node index.js",
     "frontend": "cd hotel-frontend && npm run dev",
     "start": "node index.js",
-    "build": "yarn"
+    "build": "npm install"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
